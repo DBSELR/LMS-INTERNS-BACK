@@ -19,7 +19,7 @@ namespace LMS.DTOs
         public string Batch { get; set; }
         public string Programme { get; set; }
         public int programmeId { get; set; }
-        public int groupId { get; set; }
+       // public int groupId { get; set; }
         public int sem { get; set; }
         public int RefCode { get; set; }
         public int semester { get; set; }

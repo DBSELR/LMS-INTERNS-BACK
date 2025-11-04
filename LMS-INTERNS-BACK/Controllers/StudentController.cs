@@ -474,7 +474,7 @@ namespace LMS.Controllers
                 cmd.Parameters.AddWithValue("@ZipCode", (object?)request.ZipCode ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@BatchName", (object?)request.Batch ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@ProgrammeId", request.programmeId);
-                cmd.Parameters.AddWithValue("@GroupId", request.groupId);
+               // cmd.Parameters.AddWithValue("@GroupId", request.groupId);
                 cmd.Parameters.AddWithValue("@Jsem", request.semester);
                 cmd.Parameters.AddWithValue("@ssem", request.semester);
                 cmd.Parameters.AddWithValue("@RefCode", request.RefCode);
@@ -571,7 +571,7 @@ namespace LMS.Controllers
                 cmd.Parameters.AddWithValue("@ZipCode", request.ZipCode ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@BatchName", request.Batch ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@ProgrammeId", request.programmeId);
-                cmd.Parameters.AddWithValue("@GroupId", request.groupId);
+               // cmd.Parameters.AddWithValue("@GroupId", request.groupId);
                 cmd.Parameters.AddWithValue("@Jsem", request.semester); 
                 cmd.Parameters.AddWithValue("@ssem", request.semester);
                 cmd.Parameters.AddWithValue("@RefCode", request.RefCode);
@@ -771,7 +771,7 @@ namespace LMS.Controllers
                     cmd.Parameters.AddWithValue("@ProfilePhotoUrl", request.ProfilePhotoUrl);
                     cmd.Parameters.AddWithValue("@BatchName", request.Batch);
                     cmd.Parameters.AddWithValue("@ProgrammeId", request.programmeId);
-                    cmd.Parameters.AddWithValue("@GroupId", request.groupId);
+                   // cmd.Parameters.AddWithValue("@GroupId", request.groupId);
                     cmd.Parameters.AddWithValue("@Jsem", request.semester);
                     cmd.Parameters.AddWithValue("@ssem", request.semester);
                     cmd.Parameters.AddWithValue("@degree", request.degree);
