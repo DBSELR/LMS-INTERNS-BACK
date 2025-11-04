@@ -309,47 +309,183 @@ namespace LMS.Controllers
         //    }
         //}
 
+        //[HttpPost("register")]
+        //public async Task<IActionResult> Register([FromBody] StudentRegisterDto request)
+        //{
+        //    if (!ModelState.IsValid)
+        //        return BadRequest(ModelState);
+
+        //    try
+        //    {
+        //        await using var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+        //        await using var cmd = new SqlCommand("sp_Student_Register", conn) { CommandType = CommandType.StoredProcedure };
+
+        //        var usernameParam = new SqlParameter("@Username", SqlDbType.NVarChar, 7) { Direction = ParameterDirection.Output };
+        //        cmd.Parameters.AddWithValue("@Email", request.Email ?? string.Empty);
+        //        cmd.Parameters.AddWithValue("@PasswordHash", "TEMP");
+        //        cmd.Parameters.AddWithValue("@FirstName", request.FirstName ?? string.Empty);
+        //        cmd.Parameters.AddWithValue("@LastName", request.LastName ?? string.Empty);
+        //        cmd.Parameters.AddWithValue("@PhoneNumber", request.PhoneNumber ?? string.Empty);
+        //        cmd.Parameters.AddWithValue("@Gender", request.Gender ?? (object)DBNull.Value);
+        //        cmd.Parameters.AddWithValue("@DateOfBirth", (object?)request.DateOfBirth ?? DBNull.Value);
+        //        cmd.Parameters.AddWithValue("@ProfilePhotoUrl", request.ProfilePhotoUrl ?? (object)DBNull.Value);
+        //        cmd.Parameters.AddWithValue("@Address", request.Address ?? (object)DBNull.Value);
+        //        cmd.Parameters.AddWithValue("@City", request.City ?? (object)DBNull.Value);
+        //        cmd.Parameters.AddWithValue("@State", request.State ?? (object)DBNull.Value);
+        //        cmd.Parameters.AddWithValue("@Country", request.Country ?? (object)DBNull.Value);
+        //        cmd.Parameters.AddWithValue("@ZipCode", request.ZipCode ?? (object)DBNull.Value);
+        //        cmd.Parameters.AddWithValue("@BatchName", request.Batch ?? (object)DBNull.Value);
+        //        cmd.Parameters.AddWithValue("@ProgrammeId", request.programmeId);
+        //        cmd.Parameters.AddWithValue("@GroupId", request.groupId);
+        //        cmd.Parameters.AddWithValue("@Jsem", request.semester);
+        //        cmd.Parameters.AddWithValue("@ssem", request.semester);
+        //        cmd.Parameters.AddWithValue("@RefCode", request.RefCode);
+        //        cmd.Parameters.Add(usernameParam);
+
+        //        await conn.OpenAsync();
+
+        //        // Read resultset to detect conflicts/success
+        //        using var reader = await cmd.ExecuteReaderAsync();
+        //        var conflicts = new List<object>();
+        //        bool gotAnyRows = false;
+        //        bool success = false;
+        //        string? generatedUsernameFromRow = null;
+
+        //        while (await reader.ReadAsync())
+        //        {
+        //            gotAnyRows = true;
+        //            success = reader.GetBoolean(reader.GetOrdinal("Success"));
+
+        //            if (!success)
+        //            {
+        //                var typeOrdinal = reader.GetOrdinal("ConflictType");
+        //                var detailsOrdinal = reader.GetOrdinal("Details");
+        //                var conflictType = reader.IsDBNull(typeOrdinal) ? null : reader.GetString(typeOrdinal);
+        //                var details = reader.IsDBNull(detailsOrdinal) ? null : reader.GetString(detailsOrdinal);
+
+        //                if (!string.IsNullOrEmpty(conflictType))
+        //                    conflicts.Add(new { ConflictType = conflictType, Details = details });
+        //            }
+        //            else
+        //            {
+        //                var detailsOrdinal = reader.GetOrdinal("Details");
+        //                generatedUsernameFromRow = reader.IsDBNull(detailsOrdinal) ? null : reader.GetString(detailsOrdinal);
+        //            }
+        //        }
+
+
+        //        if (gotAnyRows && !success)
+        //        {
+        //            return Conflict(new
+        //            {
+        //                error = "Duplicate fields found",
+        //                conflicts
+        //                // e.g. [
+        //                //   { ConflictType: "EMAIL_EXISTS", Details: "Ram@dbs.com" },
+        //                //   { ConflictType: "PHONE_EXISTS", Details: "903010..." },
+        //                //   { ConflictType: "NAME_PAIR_EXISTS", Details: "Ram DBS" }
+        //                // ]
+        //            });
+        //        }
+
+
+        //        if (string.IsNullOrEmpty(generatedUsernameFromRow))
+        //            generatedUsernameFromRow = usernameParam.Value?.ToString();
+
+        //        if (string.IsNullOrEmpty(generatedUsernameFromRow))
+        //            return StatusCode(500, "Username generation failed.");
+
+        //        // Success: first-time password = username (hash and store)
+        //        var rawPassword = generatedUsernameFromRow;
+        //        var hashedPassword = BCrypt.Net.BCrypt.HashPassword(rawPassword);
+
+        //        using (var updateCmd = new SqlCommand("UPDATE Users SET PasswordHash = @PasswordHash WHERE Username = @Username", conn))
+        //        {
+        //            updateCmd.Parameters.AddWithValue("@PasswordHash", hashedPassword);
+        //            updateCmd.Parameters.AddWithValue("@Username", generatedUsernameFromRow);
+        //            await updateCmd.ExecuteNonQueryAsync();
+        //        }
+
+
+        //        // using var userIdCmd = new SqlCommand("SELECT UserId FROM Users WHERE Username = @Username", conn);
+        //        // userIdCmd.Parameters.AddWithValue("@Username", generatedUsernameFromRow);
+        //        // var userIdObj = await userIdCmd.ExecuteScalarAsync();
+
+        //        return Ok(new
+        //        {
+        //            Username = generatedUsernameFromRow,
+        //            Password = rawPassword,
+        //            Message = "Student registered successfully"
+        //        });
+        //    }
+        //    catch (SqlException ex)
+        //    {
+        //        // If you add DB unique indexes, handle those too
+        //        if (ex.Number == 2627 || ex.Number == 2601)
+        //        {
+        //            return Conflict(new
+        //            {
+        //                error = "Duplicate detected by database index.",
+        //                sqlError = ex.Message
+        //            });
+        //        }
+        //        return StatusCode(500, new { error = $"SQL error {ex.Number}: {ex.Message}" });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(500, new { error = $"Unexpected error: {ex.Message}" });
+        //    }
+        //}
+
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] StudentRegisterDto request)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            if (string.IsNullOrWhiteSpace(request.Username))
+                return BadRequest(new { error = "Username is required." });
+
             try
             {
-                await using var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
-                await using var cmd = new SqlCommand("sp_Student_Register", conn) { CommandType = CommandType.StoredProcedure };
+                var connStr = _configuration.GetConnectionString("DefaultConnection");
 
-                var usernameParam = new SqlParameter("@Username", SqlDbType.NVarChar, 7) { Direction = ParameterDirection.Output };
+                // Initial password = username; store bcrypt hash
+                var rawPassword = request.Username.Trim();
+                var hashedPassword = BCrypt.Net.BCrypt.HashPassword(rawPassword);
+
+                await using var conn = new SqlConnection(connStr);
+                await using var cmd = new SqlCommand("sp_Student_Register", conn)
+                { CommandType = CommandType.StoredProcedure };
+
+                cmd.Parameters.AddWithValue("@Username", request.Username?.Trim() ?? string.Empty);
                 cmd.Parameters.AddWithValue("@Email", request.Email ?? string.Empty);
-                cmd.Parameters.AddWithValue("@PasswordHash", "TEMP");
+                cmd.Parameters.AddWithValue("@PasswordHash", hashedPassword);
                 cmd.Parameters.AddWithValue("@FirstName", request.FirstName ?? string.Empty);
                 cmd.Parameters.AddWithValue("@LastName", request.LastName ?? string.Empty);
                 cmd.Parameters.AddWithValue("@PhoneNumber", request.PhoneNumber ?? string.Empty);
-                cmd.Parameters.AddWithValue("@Gender", request.Gender ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@Gender", (object?)request.Gender ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@DateOfBirth", (object?)request.DateOfBirth ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@ProfilePhotoUrl", request.ProfilePhotoUrl ?? (object)DBNull.Value);
-                cmd.Parameters.AddWithValue("@Address", request.Address ?? (object)DBNull.Value);
-                cmd.Parameters.AddWithValue("@City", request.City ?? (object)DBNull.Value);
-                cmd.Parameters.AddWithValue("@State", request.State ?? (object)DBNull.Value);
-                cmd.Parameters.AddWithValue("@Country", request.Country ?? (object)DBNull.Value);
-                cmd.Parameters.AddWithValue("@ZipCode", request.ZipCode ?? (object)DBNull.Value);
-                cmd.Parameters.AddWithValue("@BatchName", request.Batch ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@ProfilePhotoUrl", (object?)request.ProfilePhotoUrl ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@Address", (object?)request.Address ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@City", (object?)request.City ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@State", (object?)request.State ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@Country", (object?)request.Country ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@ZipCode", (object?)request.ZipCode ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@BatchName", (object?)request.Batch ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@ProgrammeId", request.programmeId);
                 cmd.Parameters.AddWithValue("@GroupId", request.groupId);
                 cmd.Parameters.AddWithValue("@Jsem", request.semester);
                 cmd.Parameters.AddWithValue("@ssem", request.semester);
                 cmd.Parameters.AddWithValue("@RefCode", request.RefCode);
-                cmd.Parameters.Add(usernameParam);
 
                 await conn.OpenAsync();
 
-                // Read resultset to detect conflicts/success
+                // Read the proc's resultset: either conflicts (Success=0 rows) or one success row (Success=1)
                 using var reader = await cmd.ExecuteReaderAsync();
                 var conflicts = new List<object>();
                 bool gotAnyRows = false;
                 bool success = false;
-                string? generatedUsernameFromRow = null;
 
                 while (await reader.ReadAsync())
                 {
@@ -358,77 +494,44 @@ namespace LMS.Controllers
 
                     if (!success)
                     {
-                        var typeOrdinal = reader.GetOrdinal("ConflictType");
-                        var detailsOrdinal = reader.GetOrdinal("Details");
-                        var conflictType = reader.IsDBNull(typeOrdinal) ? null : reader.GetString(typeOrdinal);
-                        var details = reader.IsDBNull(detailsOrdinal) ? null : reader.GetString(detailsOrdinal);
-
-                        if (!string.IsNullOrEmpty(conflictType))
-                            conflicts.Add(new { ConflictType = conflictType, Details = details });
-                    }
-                    else
-                    {
-                        var detailsOrdinal = reader.GetOrdinal("Details");
-                        generatedUsernameFromRow = reader.IsDBNull(detailsOrdinal) ? null : reader.GetString(detailsOrdinal);
+                        var ctOrd = reader.GetOrdinal("ConflictType");
+                        var dtOrd = reader.GetOrdinal("Details");
+                        var conflictType = reader.IsDBNull(ctOrd) ? null : reader.GetString(ctOrd);
+                        var details = reader.IsDBNull(dtOrd) ? null : reader.GetString(dtOrd);
+                        conflicts.Add(new { ConflictType = conflictType, Details = details });
                     }
                 }
 
-              
                 if (gotAnyRows && !success)
                 {
                     return Conflict(new
                     {
                         error = "Duplicate fields found",
                         conflicts
-                        // e.g. [
-                        //   { ConflictType: "EMAIL_EXISTS", Details: "Ram@dbs.com" },
-                        //   { ConflictType: "PHONE_EXISTS", Details: "903010..." },
-                        //   { ConflictType: "NAME_PAIR_EXISTS", Details: "Ram DBS" }
-                        // ]
                     });
                 }
 
-             
-                if (string.IsNullOrEmpty(generatedUsernameFromRow))
-                    generatedUsernameFromRow = usernameParam.Value?.ToString();
+                if (!gotAnyRows)
+                    return StatusCode(500, new { error = "Registration failed with no response." });
 
-                if (string.IsNullOrEmpty(generatedUsernameFromRow))
-                    return StatusCode(500, "Username generation failed.");
-
-                // Success: first-time password = username (hash and store)
-                var rawPassword = generatedUsernameFromRow;
-                var hashedPassword = BCrypt.Net.BCrypt.HashPassword(rawPassword);
-
-                using (var updateCmd = new SqlCommand("UPDATE Users SET PasswordHash = @PasswordHash WHERE Username = @Username", conn))
-                {
-                    updateCmd.Parameters.AddWithValue("@PasswordHash", hashedPassword);
-                    updateCmd.Parameters.AddWithValue("@Username", generatedUsernameFromRow);
-                    await updateCmd.ExecuteNonQueryAsync();
-                }
-
-               
-                // using var userIdCmd = new SqlCommand("SELECT UserId FROM Users WHERE Username = @Username", conn);
-                // userIdCmd.Parameters.AddWithValue("@Username", generatedUsernameFromRow);
-                // var userIdObj = await userIdCmd.ExecuteScalarAsync();
-
+                // Success
                 return Ok(new
                 {
-                    Username = generatedUsernameFromRow,
-                    Password = rawPassword,
+                    Username = request.Username,
+                    Password = rawPassword, // first-time password
                     Message = "Student registered successfully"
+                });
+            }
+            catch (SqlException ex) when (ex.Number == 2627 || ex.Number == 2601)
+            {
+                return Conflict(new
+                {
+                    error = "Duplicate detected by database index.",
+                    sqlError = ex.Message
                 });
             }
             catch (SqlException ex)
             {
-                // If you add DB unique indexes, handle those too
-                if (ex.Number == 2627 || ex.Number == 2601)
-                {
-                    return Conflict(new
-                    {
-                        error = "Duplicate detected by database index.",
-                        sqlError = ex.Message
-                    });
-                }
                 return StatusCode(500, new { error = $"SQL error {ex.Number}: {ex.Message}" });
             }
             catch (Exception ex)
@@ -436,6 +539,7 @@ namespace LMS.Controllers
                 return StatusCode(500, new { error = $"Unexpected error: {ex.Message}" });
             }
         }
+
 
         [HttpPost("Landingregister")]
         [AllowAnonymous]
