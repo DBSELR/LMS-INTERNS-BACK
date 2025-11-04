@@ -235,26 +235,26 @@ namespace LMS.Controllers
             try
             {
                 
-                string rawCombined = programme.ProgrammeCode ?? string.Empty;
+              //  string rawCombined = programme.ProgrammeCode ?? string.Empty;
                 string splitCode = programme.ProgrammeCode ?? string.Empty;
                 string splitName = programme.ProgrammeName ?? string.Empty;
 
-                if (!string.IsNullOrWhiteSpace(rawCombined) && rawCombined.Contains("-"))
-                {
+                //if (!string.IsNullOrWhiteSpace(rawCombined) && rawCombined.Contains("-"))
+                //{
                     
-                    var parts = rawCombined.Split(new[] { '-' }, 2, StringSplitOptions.None);
-                    if (parts.Length == 2)
-                    {
-                        splitCode = parts[0].Trim();         // e.g., "AP"
-                        splitName = parts[1].Trim();         // e.g., "ANDHRA PRADESH"
-                    }
-                }
-                else
-                {
+                //    var parts = rawCombined.Split(new[] { '-' }, 2, StringSplitOptions.None);
+                //    if (parts.Length == 2)
+                //    {
+                //        splitCode = parts[0].Trim();         // e.g., "AP"
+                //        splitName = parts[1].Trim();         // e.g., "ANDHRA PRADESH"
+                //    }
+                //}
+                //else
+                //{
                     
                     splitCode = (programme.ProgrammeCode ?? string.Empty).Trim();
                     splitName = (programme.ProgrammeName ?? string.Empty).Trim();
-                }
+              //  }
 
                 Programme created = null;
 
@@ -522,7 +522,7 @@ namespace LMS.Controllers
                             cmd.Parameters.AddWithValue("@Bid", dto.Bid);
                             cmd.Parameters.AddWithValue("@BatchName", dto.BatchName);
                             cmd.Parameters.AddWithValue("@Pid", dto.Pid);
-                            cmd.Parameters.AddWithValue("@Gid", dto.Gid);
+                            //cmd.Parameters.AddWithValue("@Gid", dto.Gid);
                             cmd.Parameters.AddWithValue("@StartDate", dto.StartDate);
                             cmd.Parameters.AddWithValue("@EndDate", dto.EndDate);
                             cmd.Parameters.AddWithValue("@Fee", dto.Fee);
@@ -672,7 +672,7 @@ namespace LMS.Controllers
             public int Bid { get; set; } = 0;
             public string BatchName { get; set; }
             public int Pid { get; set; } 
-            public int Gid { get; set; } 
+          //  public int Gid { get; set; } 
             public DateTime StartDate { get; set; }
             public DateTime EndDate { get; set; }
             public decimal Fee { get; set; }
