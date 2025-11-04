@@ -35,7 +35,7 @@ namespace LMS.Controllers
         }
 
         [HttpGet("ByProgrammeAndSemester")]
-        public async Task<IActionResult> GetCoursesByProgrammeAndSemester(string Board, int group)
+        public async Task<IActionResult> GetCoursesByProgrammeAndSemester()
         {
             var result = new List<object>();
             using var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
