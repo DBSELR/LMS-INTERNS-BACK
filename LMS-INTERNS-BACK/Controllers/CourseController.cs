@@ -43,8 +43,8 @@ namespace LMS.Controllers
             {
                 CommandType = CommandType.StoredProcedure
             };
-            cmd.Parameters.AddWithValue("@Board", Board);
-            cmd.Parameters.AddWithValue("@Class", group.ToString());
+            //cmd.Parameters.AddWithValue("@Board", Board);
+            //cmd.Parameters.AddWithValue("@Class", group.ToString());
 
             await conn.OpenAsync();
             using var reader = await cmd.ExecuteReaderAsync();
