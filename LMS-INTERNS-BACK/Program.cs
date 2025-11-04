@@ -351,5 +351,6 @@ app.MapControllers();
 
 app.MapHub<SessionHub>("/sessionhub");
 
+
 app.Run();
 
