@@ -23,5 +23,7 @@ namespace LMS.DTOs
         public int sem { get; set; }
         public int RefCode { get; set; }
         public int semester { get; set; }
+        public string degree { get; set; }
+        
     }
 }

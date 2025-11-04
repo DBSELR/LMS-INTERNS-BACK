@@ -24,5 +24,7 @@
         //public string Semester { get; set; }
 
         public int semester { get; set; }
+        public string degree { get; set; }
+        
     }
 }
