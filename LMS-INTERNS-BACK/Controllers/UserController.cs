@@ -338,7 +338,7 @@ namespace LMS.Controllers
         }
 
         [HttpGet("GetUniversity")]
-        public async Task<IActionResult> GetUniqueBatches()
+        public async Task<IActionResult> GetUniversity()
         {
             var result = new List<object>();
             using var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
@@ -353,7 +353,7 @@ namespace LMS.Controllers
         }
 
         [HttpGet("GetCollegebyUniversity")]
-        public async Task<IActionResult> GetProgrammesByBatchName(string uname)
+        public async Task<IActionResult> GetCollegebyUniversity(string uname)
         {
             var result = new List<object>();
             using var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
