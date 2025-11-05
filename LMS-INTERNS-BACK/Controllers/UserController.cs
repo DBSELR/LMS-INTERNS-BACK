@@ -337,6 +337,37 @@ namespace LMS.Controllers
             }
         }
 
+        [HttpGet("GetUniversity")]
+        public async Task<IActionResult> GetUniqueBatches()
+        {
+            var result = new List<object>();
+            using var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+            using var cmd = new SqlCommand("sp_GetUniversity", conn) { CommandType = CommandType.StoredProcedure };
+
+            await conn.OpenAsync();
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+                result.Add(ReadRow(reader));
+
+            return Ok(result);
+        }
+
+        [HttpGet("GetCollegebyUniversity")]
+        public async Task<IActionResult> GetProgrammesByBatchName(string uname)
+        {
+            var result = new List<object>();
+            using var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+            using var cmd = new SqlCommand("sp_GetCollegebyUniversity", conn)
+            { CommandType = CommandType.StoredProcedure };
+            cmd.Parameters.AddWithValue("@uname", uname);
+            await conn.OpenAsync();
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+                result.Add(ReadRow(reader));
+
+            return Ok(result);
+        }
+
         public class AssignRoleRequest
         {
             public string Role { get; set; }
