@@ -64,6 +64,8 @@ namespace LMS.DTOs
         public int FeeId { get; set; }
         public int StudentId { get; set; }
         public string StudentName { get; set; }
+
+        public string Regno { get; set; }
         public int programmeId { get; set; }
         public int groupId { get; set; }
         public string Batch { get; set; }

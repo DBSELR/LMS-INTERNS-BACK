@@ -409,5 +409,39 @@ public class FeeController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("GetByCollegewiseStudentFee/{userID}")]
+    public IActionResult GetByCollegewiseStudentFee(int userID)
+    {
+        var result = new List<FeeSummaryDto>();
+
+        using var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+        using var cmd = new SqlCommand("sp_CourseFees_GetByCollegewiseStudent", conn);
+        cmd.CommandType = CommandType.StoredProcedure;
+        cmd.Parameters.AddWithValue("@userID", userID);
+
+        conn.Open();
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            result.Add(new FeeSummaryDto
+            {
+                StudentId = reader.IsDBNull(0) ? 0 : reader.GetInt32(0),
+                Regno = reader.IsDBNull(1) ? "" : reader.GetString(1),
+                StudentName = reader.IsDBNull(2) ? "" : reader.GetString(2),
+                Installment = reader.IsDBNull(3) ? 0 : reader.GetInt32(3),
+                AmountDue = reader.IsDBNull(4) ? 0 : reader.GetDecimal(4),
+
+                //DueDate = reader.IsDBNull(3) ? (DateTime?)null : reader.GetDateTime(3)
+                DueDate = reader.IsDBNull(5) ? DateTime.MinValue : reader.GetDateTime(5),
+                Hid = reader.IsDBNull(6) ? 0 : reader.GetInt32(6),
+                FeeHead = reader.IsDBNull(7) ? "" : reader.GetString(7),
+                Paid = reader.IsDBNull(8) ? 0 : reader.GetDecimal(8),
+                Remarks = reader.IsDBNull(9) ? "" : reader.GetString(9)
+            });
+        }
+
+        return result.Count == 0 ? NotFound("No fee records found.") : Ok(result);
+    }
+
 
 }
