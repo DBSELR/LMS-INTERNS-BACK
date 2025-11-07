@@ -221,6 +221,40 @@ public class FeeController : ControllerBase
         
     }
 
+    [HttpPost("BulkPay")]
+    public async Task<IActionResult> BulkPay([FromBody] List<PayFeeItemDto> items)
+    {
+        if (items is null || items.Count == 0)
+            return BadRequest("No payment items supplied.");
+
+        if (items.Any(x => x.Amount <= 0))
+            return BadRequest("All payments must have a positive Amount.");
+
+        await using var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+        await using var cmd = new SqlCommand("sp_Fees_BulkPay", conn) { CommandType = CommandType.StoredProcedure };
+
+        // Convert to the JSON shape expected by the stored procedure
+        var jsonReady = items.Select(x => new
+        {
+            StudentID = x.StudentID,
+            AmountPaid = x.Amount,
+            Installment = x.Installment,
+            PaymentMethod = string.IsNullOrWhiteSpace(x.PaymentMethod) ? "Cash" : x.PaymentMethod,
+            TransactionId = x.TransactionId ?? string.Empty,
+            HeadID = x.payHeadID
+        });
+
+        var json = System.Text.Json.JsonSerializer.Serialize(jsonReady);
+
+        cmd.Parameters.Add("@Payments", SqlDbType.NVarChar).Value = json;
+        cmd.Parameters.Add("@Now", SqlDbType.DateTime).Value = DateTime.UtcNow;
+
+        await conn.OpenAsync();
+        await cmd.ExecuteNonQueryAsync();
+
+        return Ok(new { message = "✅ Bulk payment(s) recorded.", count = items.Count });
+    }
+
     [HttpGet("GetSemwisefeemaster")]
     public async Task<IActionResult> GetSemwisefeemaster(string Batch, int ProgrammeId, int GroupId)
     {

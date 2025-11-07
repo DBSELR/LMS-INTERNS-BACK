@@ -526,6 +526,7 @@ namespace LMS.Controllers
                             cmd.Parameters.AddWithValue("@StartDate", dto.StartDate);
                             cmd.Parameters.AddWithValue("@EndDate", dto.EndDate);
                             cmd.Parameters.AddWithValue("@Fee", dto.Fee);
+                            cmd.Parameters.AddWithValue("@university", dto.university);
 
                             await cmd.ExecuteNonQueryAsync();
                         }
@@ -595,6 +596,22 @@ namespace LMS.Controllers
             using var cmd = new SqlCommand("sp_Programme_GetProgrammesByBatch", conn)
             { CommandType = CommandType.StoredProcedure };
             cmd.Parameters.AddWithValue("@bid", bid);
+            await conn.OpenAsync();
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+                result.Add(ReadRow(reader));
+
+            return Ok(result);
+        }
+
+        [HttpGet("GetBatchByUsername")]
+        public async Task<IActionResult> GetBatchByUsername(int UserId)
+        {
+            var result = new List<object>();
+            using var conn = new SqlConnection(_connection);
+            using var cmd = new SqlCommand("sp_Programme_GetBatchByUsername", conn)
+            { CommandType = CommandType.StoredProcedure };
+            cmd.Parameters.AddWithValue("@UserId", UserId);
             await conn.OpenAsync();
             using var reader = await cmd.ExecuteReaderAsync();
             while (await reader.ReadAsync())
@@ -676,6 +693,7 @@ namespace LMS.Controllers
             public DateTime StartDate { get; set; }
             public DateTime EndDate { get; set; }
             public decimal Fee { get; set; }
+            public string university { get; set; }
         }
     }
 }

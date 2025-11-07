@@ -132,6 +132,16 @@ namespace LMS.DTOs
     }
 
 
+    public sealed class PayFeeItemDto
+    {
+        public string StudentID { get; set; } = default!;
+        public decimal Amount { get; set; }        // amount to pay for this row
+        public int Installment { get; set; }
+        public string? PaymentMethod { get; set; } // default "Cash"
+        public string? TransactionId { get; set; } // client/gen id
+        public int payHeadID { get; set; }         // HeadID (Hid)
+    }
+
 
 
 
