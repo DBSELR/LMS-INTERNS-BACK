@@ -626,7 +626,8 @@ public class FeeController : ControllerBase
                 Hid = reader.IsDBNull(6) ? 0 : reader.GetInt32(6),
                 FeeHead = reader.IsDBNull(7) ? "" : reader.GetString(7),
                 Paid = reader.IsDBNull(8) ? 0 : reader.GetDecimal(8),
-                Remarks = reader.IsDBNull(9) ? "" : reader.GetString(9)
+                Remarks = reader.IsDBNull(9) ? "" : reader.GetString(9),
+                ftid = reader.IsDBNull(10) ? 0 : reader.GetInt32(10)
             });
         }
 

@@ -88,6 +88,7 @@ namespace LMS.DTOs
         public string FeeHead { get; set; }
 
         public string Remarks { get; set; }
+        public int ftid { get; set; }
     }
 
     
