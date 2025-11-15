@@ -344,47 +344,192 @@ public class FeeController : ControllerBase
     //    }
     //}
 
+    //[HttpPost("SaveInstallmentFee")]
+    //public async Task<IActionResult> SaveInstallmentFee([FromBody] SemesterFeeRequest request)
+    //{
+    //    try
+    //    {
+    //        using var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+    //        using var cmd = new SqlCommand("sp_Fee_Insert_SemesterFeeTemplate", conn);
+    //        cmd.CommandType = CommandType.StoredProcedure;
+
+    //        cmd.Parameters.AddWithValue("@Batch", string.IsNullOrWhiteSpace(request.Batch) ? (object)DBNull.Value : request.Batch);
+    //        cmd.Parameters.AddWithValue("@ProgrammeId", request.ProgrammeId ?? (object)DBNull.Value);
+    //        cmd.Parameters.AddWithValue("@GroupId", request.GroupId ?? (object)DBNull.Value);
+    //        cmd.Parameters.AddWithValue("@installment", request.installment ?? (object)DBNull.Value);
+    //        cmd.Parameters.AddWithValue("@sem", request.Semester ?? (object)DBNull.Value);
+    //        cmd.Parameters.AddWithValue("@DueDate", request.DueDate ?? (object)DBNull.Value);
+
+    //        //if (!string.IsNullOrWhiteSpace(request.DueDate) && DateTime.TryParse(request.DueDate, out var due))
+    //        //    cmd.Parameters.AddWithValue("@DueDate", due);
+    //        //else
+    //        //    cmd.Parameters.AddWithValue("@DueDate", DBNull.Value);
+
+    //        cmd.Parameters.AddWithValue("@Hid", request.FeeHeadId ?? (object)DBNull.Value);
+
+    //        // ✅ Get the actual fee head name from DB or map it based on Id
+    //        var feeHead = await GetFeeHeadName(request.FeeHeadId); // assume this fetches name like "Tuition Fee"
+    //        cmd.Parameters.AddWithValue("@FeeHead", feeHead ?? (object)DBNull.Value);
+
+    //        cmd.Parameters.AddWithValue("@AmountDue", request.Amount ?? (object)DBNull.Value);
+
+    //        await conn.OpenAsync();
+    //        await cmd.ExecuteNonQueryAsync();
+
+    //        return Ok(new { message = "Fee template saved successfully." });
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        return BadRequest(new { error = ex.Message });
+    //    }
+    //}
+
+    // You may add this helper method to fetch Fee Head name by ID
+
+    // Example DTO (update this class in your project)
+    //public class SemesterFeeRequest
+    //{
+    //    public string Batch { get; set; }
+    //    public int? ProgrammeId { get; set; }
+    //    public string DueDate { get; set; } // "yyyy-MM-dd" or null
+    //}
+
+    //[HttpPost("SaveInstallmentFee")]
+    //public async Task<IActionResult> SaveInstallmentFee([FromBody] SemesterFeeRequest request)
+    //{
+    //    try
+    //    {
+    //        using var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+    //        using var cmd = new SqlCommand("sp_Fee_Insert_SemesterFeeTemplate", conn);
+    //        cmd.CommandType = CommandType.StoredProcedure;
+
+    //        // @Batch
+    //        cmd.Parameters.AddWithValue(
+    //            "@Batch",
+    //            string.IsNullOrWhiteSpace(request.Batch) ? (object)DBNull.Value : request.Batch
+    //        );
+
+    //        // @ProgrammeId
+    //        cmd.Parameters.AddWithValue(
+    //            "@ProgrammeId",
+    //            request.ProgrammeId ?? (object)DBNull.Value
+    //        );
+
+    //        // @DueDate
+    //        if (!string.IsNullOrWhiteSpace(request.DueDate) && DateTime.TryParse(request.DueDate, out var due))
+    //            cmd.Parameters.AddWithValue("@DueDate", due);
+    //        else
+    //            cmd.Parameters.AddWithValue("@DueDate", DBNull.Value);
+
+    //        await conn.OpenAsync();
+    //        await cmd.ExecuteNonQueryAsync();
+
+    //        return Ok(new { message = "Tuition fee template saved successfully." });
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        return BadRequest(new { error = ex.Message });
+    //    }
+    //}
+
+
+    // Make sure your request model has these properties:
+    public class SemesterFeeRequest
+    {
+        public int? Id { get; set; }           
+        public string Batch { get; set; }
+        public int? ProgrammeId { get; set; }
+        public string DueDate { get; set; }    
+        public decimal? Fee { get; set; }      
+        public int? ColId { get; set; }       
+    }
+
     [HttpPost("SaveInstallmentFee")]
     public async Task<IActionResult> SaveInstallmentFee([FromBody] SemesterFeeRequest request)
     {
+        if (request == null)
+            return BadRequest(new { error = "Request body is required." });
+
+        // Basic validation – adjust as per your requirement
+        if (string.IsNullOrWhiteSpace(request.Batch))
+            return BadRequest(new { error = "Batch is required." });
+
+        if (!request.ProgrammeId.HasValue)
+            return BadRequest(new { error = "ProgrammeId is required." });
+
+        if (!request.ColId.HasValue)
+            return BadRequest(new { error = "ColId is required." });
+
+        if (!request.Fee.HasValue)
+            return BadRequest(new { error = "Fee is required." });
+
         try
         {
             using var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
-            using var cmd = new SqlCommand("sp_Fee_Insert_SemesterFeeTemplate", conn);
-            cmd.CommandType = CommandType.StoredProcedure;
+            using var cmd = new SqlCommand("sp_Fee_Insert_SemesterFeeTemplate", conn)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
 
-            cmd.Parameters.AddWithValue("@Batch", string.IsNullOrWhiteSpace(request.Batch) ? (object)DBNull.Value : request.Batch);
-            cmd.Parameters.AddWithValue("@ProgrammeId", request.ProgrammeId ?? (object)DBNull.Value);
-            cmd.Parameters.AddWithValue("@GroupId", request.GroupId ?? (object)DBNull.Value);
-            cmd.Parameters.AddWithValue("@installment", request.installment ?? (object)DBNull.Value);
-            cmd.Parameters.AddWithValue("@sem", request.Semester ?? (object)DBNull.Value);
-            cmd.Parameters.AddWithValue("@DueDate", request.DueDate ?? (object)DBNull.Value);
-           
-            //if (!string.IsNullOrWhiteSpace(request.DueDate) && DateTime.TryParse(request.DueDate, out var due))
-            //    cmd.Parameters.AddWithValue("@DueDate", due);
-            //else
-            //    cmd.Parameters.AddWithValue("@DueDate", DBNull.Value);
+            // @Id  (0 or NULL => insert, >0 => update, as per your PROC)
+            cmd.Parameters.AddWithValue("@Id", (object?)request.Id ?? 0);
 
-            cmd.Parameters.AddWithValue("@Hid", request.FeeHeadId ?? (object)DBNull.Value);
+            // @Batch
+            cmd.Parameters.AddWithValue(
+                "@Batch",
+                string.IsNullOrWhiteSpace(request.Batch) ? (object)DBNull.Value : request.Batch
+            );
 
-            // ✅ Get the actual fee head name from DB or map it based on Id
-            var feeHead = await GetFeeHeadName(request.FeeHeadId); // assume this fetches name like "Tuition Fee"
-            cmd.Parameters.AddWithValue("@FeeHead", feeHead ?? (object)DBNull.Value);
+            // @ProgrammeId
+            cmd.Parameters.AddWithValue(
+                "@ProgrammeId",
+                request.ProgrammeId ?? (object)DBNull.Value
+            );
 
-            cmd.Parameters.AddWithValue("@AmountDue", request.Amount ?? (object)DBNull.Value);
+            // @DueDate
+            if (!string.IsNullOrWhiteSpace(request.DueDate) &&
+                DateTime.TryParse(request.DueDate, out var due))
+            {
+                cmd.Parameters.AddWithValue("@DueDate", due);
+            }
+            else
+            {
+                cmd.Parameters.AddWithValue("@DueDate", DBNull.Value);
+            }
+
+            // @Fee  (DECIMAL(18,2))
+            cmd.Parameters.AddWithValue("@Fee", request.Fee.Value);
+
+            // @colid
+            cmd.Parameters.AddWithValue("@colid", request.ColId.Value);
 
             await conn.OpenAsync();
+
+            // Your PROC does:
+            //  - INSERT (no SELECT)
+            //  - UPDATE + SELECT @id AS id when successful
+            //
+            // ExecuteNonQuery is fine if you don't need returned id.
             await cmd.ExecuteNonQueryAsync();
 
-            return Ok(new { message = "Fee template saved successfully." });
+            var isUpdate = request.Id.HasValue && request.Id.Value > 0;
+
+            return Ok(new
+            {
+                message = isUpdate
+                    ? "Semester fee template updated successfully."
+                    : "Semester fee template saved successfully."
+            });
         }
         catch (Exception ex)
         {
+            // Will catch RAISERROR from the procedure (e.g., 'No batch found with id = %d.')
             return BadRequest(new { error = ex.Message });
         }
     }
 
-    // You may add this helper method to fetch Fee Head name by ID
+
+
     private async Task<string> GetFeeHeadName(int? id)
     {
         if (id == null) return null;
