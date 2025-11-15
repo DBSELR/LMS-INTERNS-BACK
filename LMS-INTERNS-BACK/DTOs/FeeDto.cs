@@ -139,7 +139,8 @@ namespace LMS.DTOs
         public int Installment { get; set; }
         public string? PaymentMethod { get; set; } // default "Cash"
         public string? TransactionId { get; set; } // client/gen id
-        public int payHeadID { get; set; }         // HeadID (Hid)
+        public int payHeadID { get; set; } 
+        public int ftid { get; set; }
     }
 
 

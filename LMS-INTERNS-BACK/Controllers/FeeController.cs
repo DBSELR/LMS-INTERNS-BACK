@@ -241,7 +241,8 @@ public class FeeController : ControllerBase
             Installment = x.Installment,
             PaymentMethod = string.IsNullOrWhiteSpace(x.PaymentMethod) ? "Cash" : x.PaymentMethod,
             TransactionId = x.TransactionId ?? string.Empty,
-            HeadID = x.payHeadID
+            HeadID = x.payHeadID,
+            ftid = x.ftid
         });
 
         var json = System.Text.Json.JsonSerializer.Serialize(jsonReady);
