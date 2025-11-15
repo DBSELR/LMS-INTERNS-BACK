@@ -528,7 +528,17 @@ public class FeeController : ControllerBase
         }
     }
 
-
+    [HttpDelete("DeleteFeeById")]
+    public async Task<IActionResult> DeleteFeeById(int id)
+    {
+        using var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+        using var cmd = new SqlCommand("sp_Fee_DeleteById", conn);
+        cmd.CommandType = CommandType.StoredProcedure;
+        cmd.Parameters.AddWithValue("@Id", id);
+        await conn.OpenAsync();
+        await cmd.ExecuteNonQueryAsync();
+        return NoContent();
+    }
 
     private async Task<string> GetFeeHeadName(int? id)
     {
