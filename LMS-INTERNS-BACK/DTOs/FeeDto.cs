@@ -89,6 +89,7 @@ namespace LMS.DTOs
 
         public string Remarks { get; set; }
         public int ftid { get; set; }
+        public string course { get; set; }
     }
 
     

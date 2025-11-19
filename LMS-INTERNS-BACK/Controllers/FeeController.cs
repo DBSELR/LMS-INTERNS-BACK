@@ -92,8 +92,9 @@ public class FeeController : ControllerBase
                 PaymentDate = reader.IsDBNull(6) ? null : reader.GetDateTime(6),
                 Installment = reader.GetInt32(7),
                 Hid = reader.GetInt32(8),
-                StudentName = reader.GetString(9),
-                FeeHead = reader.GetString(10)
+                ftid = reader.GetInt32(9),
+                StudentName = reader.GetString(10),
+                FeeHead = reader.GetString(11)
             });
         }
 
@@ -451,12 +452,15 @@ public class FeeController : ControllerBase
         if (request == null)
             return BadRequest(new { error = "Request body is required." });
 
+        var isUpdate = request.Id.HasValue && request.Id.Value > 0;
+
         // Basic validation – adjust as per your requirement
         if (string.IsNullOrWhiteSpace(request.Batch))
             return BadRequest(new { error = "Batch is required." });
 
-        if (!request.ProgrammeId.HasValue)
-            return BadRequest(new { error = "ProgrammeId is required." });
+        // 👉 ProgrammeId is only mandatory when UPDATING a specific record
+        if (!request.ProgrammeId.HasValue && isUpdate)
+            return BadRequest(new { error = "ProgrammeId is required when updating an existing record." });
 
         if (!request.ColId.HasValue)
             return BadRequest(new { error = "ColId is required." });
@@ -472,7 +476,7 @@ public class FeeController : ControllerBase
                 CommandType = CommandType.StoredProcedure
             };
 
-            // @Id  (0 or NULL => insert, >0 => update, as per your PROC)
+            // @Id  (0 or NULL => insert, >0 => update)
             cmd.Parameters.AddWithValue("@Id", (object?)request.Id ?? 0);
 
             // @Batch
@@ -481,10 +485,10 @@ public class FeeController : ControllerBase
                 string.IsNullOrWhiteSpace(request.Batch) ? (object)DBNull.Value : request.Batch
             );
 
-            // @ProgrammeId
+            // @ProgrammeId   👉 can now be NULL for "all courses"
             cmd.Parameters.AddWithValue(
                 "@ProgrammeId",
-                request.ProgrammeId ?? (object)DBNull.Value
+                (object?)request.ProgrammeId ?? DBNull.Value
             );
 
             // @DueDate
@@ -505,15 +509,7 @@ public class FeeController : ControllerBase
             cmd.Parameters.AddWithValue("@colid", request.ColId.Value);
 
             await conn.OpenAsync();
-
-            // Your PROC does:
-            //  - INSERT (no SELECT)
-            //  - UPDATE + SELECT @id AS id when successful
-            //
-            // ExecuteNonQuery is fine if you don't need returned id.
             await cmd.ExecuteNonQueryAsync();
-
-            var isUpdate = request.Id.HasValue && request.Id.Value > 0;
 
             return Ok(new
             {
@@ -524,10 +520,94 @@ public class FeeController : ControllerBase
         }
         catch (Exception ex)
         {
-            // Will catch RAISERROR from the procedure (e.g., 'No batch found with id = %d.')
             return BadRequest(new { error = ex.Message });
         }
     }
+
+
+    //[HttpPost("SaveInstallmentFee")]
+    //public async Task<IActionResult> SaveInstallmentFee([FromBody] SemesterFeeRequest request)
+    //{
+    //    if (request == null)
+    //        return BadRequest(new { error = "Request body is required." });
+
+    //    // Basic validation – adjust as per your requirement
+    //    if (string.IsNullOrWhiteSpace(request.Batch))
+    //        return BadRequest(new { error = "Batch is required." });
+
+    //    if (!request.ProgrammeId.HasValue)
+    //        return BadRequest(new { error = "ProgrammeId is required." });
+
+    //    if (!request.ColId.HasValue)
+    //        return BadRequest(new { error = "ColId is required." });
+
+    //    if (!request.Fee.HasValue)
+    //        return BadRequest(new { error = "Fee is required." });
+
+    //    try
+    //    {
+    //        using var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+    //        using var cmd = new SqlCommand("sp_Fee_Insert_SemesterFeeTemplate", conn)
+    //        {
+    //            CommandType = CommandType.StoredProcedure
+    //        };
+
+    //        // @Id  (0 or NULL => insert, >0 => update, as per your PROC)
+    //        cmd.Parameters.AddWithValue("@Id", (object?)request.Id ?? 0);
+
+    //        // @Batch
+    //        cmd.Parameters.AddWithValue(
+    //            "@Batch",
+    //            string.IsNullOrWhiteSpace(request.Batch) ? (object)DBNull.Value : request.Batch
+    //        );
+
+    //        // @ProgrammeId
+    //        cmd.Parameters.AddWithValue(
+    //            "@ProgrammeId",
+    //            request.ProgrammeId ?? (object)DBNull.Value
+    //        );
+
+    //        // @DueDate
+    //        if (!string.IsNullOrWhiteSpace(request.DueDate) &&
+    //            DateTime.TryParse(request.DueDate, out var due))
+    //        {
+    //            cmd.Parameters.AddWithValue("@DueDate", due);
+    //        }
+    //        else
+    //        {
+    //            cmd.Parameters.AddWithValue("@DueDate", DBNull.Value);
+    //        }
+
+    //        // @Fee  (DECIMAL(18,2))
+    //        cmd.Parameters.AddWithValue("@Fee", request.Fee.Value);
+
+    //        // @colid
+    //        cmd.Parameters.AddWithValue("@colid", request.ColId.Value);
+
+    //        await conn.OpenAsync();
+
+    //        // Your PROC does:
+    //        //  - INSERT (no SELECT)
+    //        //  - UPDATE + SELECT @id AS id when successful
+    //        //
+    //        // ExecuteNonQuery is fine if you don't need returned id.
+    //        await cmd.ExecuteNonQueryAsync();
+
+    //        var isUpdate = request.Id.HasValue && request.Id.Value > 0;
+
+    //        return Ok(new
+    //        {
+    //            message = isUpdate
+    //                ? "Semester fee template updated successfully."
+    //                : "Semester fee template saved successfully."
+    //        });
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        // Will catch RAISERROR from the procedure (e.g., 'No batch found with id = %d.')
+    //        return BadRequest(new { error = ex.Message });
+    //    }
+    //}
 
     [HttpDelete("DeleteFeeById")]
     public async Task<IActionResult> DeleteFeeById(int id)
@@ -539,6 +619,22 @@ public class FeeController : ControllerBase
         await conn.OpenAsync();
         await cmd.ExecuteNonQueryAsync();
         return NoContent();
+    }
+
+    [HttpGet("GetBatchByuniversity")]
+    public async Task<IActionResult> GetBatchByuniversity(string uname)
+    {
+        var result = new List<object>();
+        using var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+        using var cmd = new SqlCommand("sp_fee_GetBatchByuniversity", conn)
+        { CommandType = CommandType.StoredProcedure };
+        cmd.Parameters.AddWithValue("@uname", uname);
+        await conn.OpenAsync();
+        using var reader = await cmd.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+            result.Add(ReadRow(reader));
+
+        return Ok(result);
     }
 
     private async Task<string> GetFeeHeadName(int? id)
@@ -627,7 +723,8 @@ public class FeeController : ControllerBase
                 FeeHead = reader.IsDBNull(7) ? "" : reader.GetString(7),
                 Paid = reader.IsDBNull(8) ? 0 : reader.GetDecimal(8),
                 Remarks = reader.IsDBNull(9) ? "" : reader.GetString(9),
-                ftid = reader.IsDBNull(10) ? 0 : reader.GetInt32(10)
+                ftid = reader.IsDBNull(10) ? 0 : reader.GetInt32(10),
+                course = reader.IsDBNull(11) ? "" : reader.GetString(11)
             });
         }
 

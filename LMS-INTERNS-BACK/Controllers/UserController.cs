@@ -180,6 +180,8 @@ namespace LMS.Controllers
                 cmd.Parameters.AddWithValue("@DateOfBirth", (object?)dto.DateOfBirth ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@Gender", dto.Gender ?? (object)DBNull.Value);
                 cmd.Parameters.AddWithValue("@Address", dto.Address ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@ColId", (object?)dto.ColId ?? DBNull.Value);
+
 
                 await conn.OpenAsync();
 
