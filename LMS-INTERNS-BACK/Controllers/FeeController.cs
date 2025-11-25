@@ -436,14 +436,25 @@ public class FeeController : ControllerBase
 
 
     // Make sure your request model has these properties:
+    //public class SemesterFeeRequest
+    //{
+    //    public int? Id { get; set; }           
+    //    public string Batch { get; set; }
+    //    public int? ProgrammeId { get; set; }
+    //    public string DueDate { get; set; }    
+    //    public decimal? Fee { get; set; }      
+    //    public int? ColId { get; set; }       
+    //}
+
     public class SemesterFeeRequest
     {
-        public int? Id { get; set; }           
+        public int? Id { get; set; }
         public string Batch { get; set; }
         public int? ProgrammeId { get; set; }
-        public string DueDate { get; set; }    
-        public decimal? Fee { get; set; }      
-        public int? ColId { get; set; }       
+        public string DueDate { get; set; }
+        public decimal? Fee { get; set; }
+        public int? ColId { get; set; }
+        public int? Hid { get; set; }
     }
 
     [HttpPost("SaveInstallmentFee")]
@@ -454,11 +465,9 @@ public class FeeController : ControllerBase
 
         var isUpdate = request.Id.HasValue && request.Id.Value > 0;
 
-        // Basic validation – adjust as per your requirement
         if (string.IsNullOrWhiteSpace(request.Batch))
             return BadRequest(new { error = "Batch is required." });
 
-        // 👉 ProgrammeId is only mandatory when UPDATING a specific record
         if (!request.ProgrammeId.HasValue && isUpdate)
             return BadRequest(new { error = "ProgrammeId is required when updating an existing record." });
 
@@ -468,6 +477,13 @@ public class FeeController : ControllerBase
         if (!request.Fee.HasValue)
             return BadRequest(new { error = "Fee is required." });
 
+        if (request.Fee.Value < 0)
+            return BadRequest(new { error = "Fee cannot be negative." });
+
+
+        if (!request.Hid.HasValue)
+            return BadRequest(new { error = "FeeHead (Hid) is required." });
+
         try
         {
             using var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
@@ -476,22 +492,18 @@ public class FeeController : ControllerBase
                 CommandType = CommandType.StoredProcedure
             };
 
-            // @Id  (0 or NULL => insert, >0 => update)
             cmd.Parameters.AddWithValue("@Id", (object?)request.Id ?? 0);
 
-            // @Batch
             cmd.Parameters.AddWithValue(
                 "@Batch",
                 string.IsNullOrWhiteSpace(request.Batch) ? (object)DBNull.Value : request.Batch
             );
 
-            // @ProgrammeId   👉 can now be NULL for "all courses"
             cmd.Parameters.AddWithValue(
                 "@ProgrammeId",
                 (object?)request.ProgrammeId ?? DBNull.Value
             );
 
-            // @DueDate
             if (!string.IsNullOrWhiteSpace(request.DueDate) &&
                 DateTime.TryParse(request.DueDate, out var due))
             {
@@ -502,11 +514,11 @@ public class FeeController : ControllerBase
                 cmd.Parameters.AddWithValue("@DueDate", DBNull.Value);
             }
 
-            // @Fee  (DECIMAL(18,2))
             cmd.Parameters.AddWithValue("@Fee", request.Fee.Value);
-
-            // @colid
             cmd.Parameters.AddWithValue("@colid", request.ColId.Value);
+
+            // NEW: Fee Head (Hid)
+            cmd.Parameters.AddWithValue("@Hid", request.Hid.Value);
 
             await conn.OpenAsync();
             await cmd.ExecuteNonQueryAsync();
@@ -523,6 +535,86 @@ public class FeeController : ControllerBase
             return BadRequest(new { error = ex.Message });
         }
     }
+
+
+
+    //[HttpPost("SaveInstallmentFee")]
+    //public async Task<IActionResult> SaveInstallmentFee([FromBody] SemesterFeeRequest request)
+    //{
+    //    if (request == null)
+    //        return BadRequest(new { error = "Request body is required." });
+
+    //    var isUpdate = request.Id.HasValue && request.Id.Value > 0;
+
+    //    // Basic validation – adjust as per your requirement
+    //    if (string.IsNullOrWhiteSpace(request.Batch))
+    //        return BadRequest(new { error = "Batch is required." });
+
+    //    // 👉 ProgrammeId is only mandatory when UPDATING a specific record
+    //    if (!request.ProgrammeId.HasValue && isUpdate)
+    //        return BadRequest(new { error = "ProgrammeId is required when updating an existing record." });
+
+    //    if (!request.ColId.HasValue)
+    //        return BadRequest(new { error = "ColId is required." });
+
+    //    if (!request.Fee.HasValue)
+    //        return BadRequest(new { error = "Fee is required." });
+
+    //    try
+    //    {
+    //        using var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+    //        using var cmd = new SqlCommand("sp_Fee_Insert_SemesterFeeTemplate", conn)
+    //        {
+    //            CommandType = CommandType.StoredProcedure
+    //        };
+
+    //        // @Id  (0 or NULL => insert, >0 => update)
+    //        cmd.Parameters.AddWithValue("@Id", (object?)request.Id ?? 0);
+
+    //        // @Batch
+    //        cmd.Parameters.AddWithValue(
+    //            "@Batch",
+    //            string.IsNullOrWhiteSpace(request.Batch) ? (object)DBNull.Value : request.Batch
+    //        );
+
+    //        // @ProgrammeId   👉 can now be NULL for "all courses"
+    //        cmd.Parameters.AddWithValue(
+    //            "@ProgrammeId",
+    //            (object?)request.ProgrammeId ?? DBNull.Value
+    //        );
+
+    //        // @DueDate
+    //        if (!string.IsNullOrWhiteSpace(request.DueDate) &&
+    //            DateTime.TryParse(request.DueDate, out var due))
+    //        {
+    //            cmd.Parameters.AddWithValue("@DueDate", due);
+    //        }
+    //        else
+    //        {
+    //            cmd.Parameters.AddWithValue("@DueDate", DBNull.Value);
+    //        }
+
+    //        // @Fee  (DECIMAL(18,2))
+    //        cmd.Parameters.AddWithValue("@Fee", request.Fee.Value);
+
+    //        // @colid
+    //        cmd.Parameters.AddWithValue("@colid", request.ColId.Value);
+
+    //        await conn.OpenAsync();
+    //        await cmd.ExecuteNonQueryAsync();
+
+    //        return Ok(new
+    //        {
+    //            message = isUpdate
+    //                ? "Semester fee template updated successfully."
+    //                : "Semester fee template saved successfully."
+    //        });
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        return BadRequest(new { error = ex.Message });
+    //    }
+    //}
 
 
     //[HttpPost("SaveInstallmentFee")]
@@ -667,6 +759,7 @@ public class FeeController : ControllerBase
         cmd.Parameters.Add("@ProgrammeId", SqlDbType.Int).Value = request.ProgrammeId ?? (object)DBNull.Value;
         cmd.Parameters.Add("@GroupId", SqlDbType.Int).Value = request.GroupId ?? (object)DBNull.Value;
         cmd.Parameters.Add("@Installment", SqlDbType.Int).Value = request.Installment ?? (object)DBNull.Value;
+        cmd.Parameters.Add("@colid", SqlDbType.Int).Value = request.colid ?? (object)DBNull.Value;
 
         await conn.OpenAsync();
         using var reader = await cmd.ExecuteReaderAsync();

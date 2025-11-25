@@ -130,6 +130,7 @@ namespace LMS.DTOs
         public int? Hid { get; set; }
         public int? GroupId { get; set; }
         public int? Installment { get; set; }
+        public int? colid { get; set; }
 
     }
 
