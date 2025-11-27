@@ -1,4 +1,4 @@
-
+﻿
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
@@ -24,6 +24,7 @@ namespace LMS.Controllers
         {
             try
             {
+                // Default summary with all fields, including new % field
                 var summary = new
                 {
                     Students = 0,
@@ -35,7 +36,8 @@ namespace LMS.Controllers
                     Assignments = 0,
                     LiveClasses = 0,
                     Tasks = 0,
-                    Leaves = 0
+                    Leaves = 0,
+                    ContentReadPercentPerBatch = 0m   
                 };
 
                 using (var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
@@ -43,22 +45,29 @@ namespace LMS.Controllers
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     await conn.OpenAsync();
-                    var reader = await cmd.ExecuteReaderAsync();
-                    if (await reader.ReadAsync())
+
+                    using (var reader = await cmd.ExecuteReaderAsync())
                     {
-                        summary = new
+                        if (await reader.ReadAsync())
                         {
-                            Students = Convert.ToInt32(reader["StudentCount"]),
-                            Users = Convert.ToInt32(reader["UsersCount"]),
-                            Professors = Convert.ToInt32(reader["ProfessorCount"]),
-                            Programmes = Convert.ToInt32(reader["ProgrammeCount"]),
-                            Books = Convert.ToInt32(reader["BookCount"]),
-                            Exams = Convert.ToInt32(reader["ExamCount"]),
-                            Assignments = Convert.ToInt32(reader["AssignmentCount"]),
-                            LiveClasses = Convert.ToInt32(reader["LiveClassCount"]),
-                            Tasks = Convert.ToInt32(reader["TaskCount"]),
-                            Leaves = Convert.ToInt32(reader["LeaveCount"])
-                        };
+                            summary = new
+                            {
+                                Students = Convert.ToInt32(reader["StudentCount"]),
+                                Users = Convert.ToInt32(reader["UsersCount"]),
+                                Professors = Convert.ToInt32(reader["ProfessorCount"]),
+                                Programmes = Convert.ToInt32(reader["ProgrammeCount"]),
+                                Books = Convert.ToInt32(reader["BookCount"]),
+                                Exams = Convert.ToInt32(reader["ExamCount"]),
+                                Assignments = Convert.ToInt32(reader["AssignmentCount"]),
+                                LiveClasses = Convert.ToInt32(reader["LiveClassCount"]),
+                                Tasks = Convert.ToInt32(reader["TaskCount"]),
+                                Leaves = Convert.ToInt32(reader["LeaveCount"]),
+                                ContentReadPercentPerBatch =
+                                    reader["ContentReadPercentPerBatch"] == DBNull.Value
+                                        ? 0m
+                                        : Convert.ToDecimal(reader["ContentReadPercentPerBatch"]) // 👈 reading decimal(5,2)
+                            };
+                        }
                     }
                 }
 
@@ -66,8 +75,64 @@ namespace LMS.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { error = "Failed to fetch dashboard summary", details = ex.Message });
+                return StatusCode(500, new
+                {
+                    error = "Failed to fetch dashboard summary",
+                    details = ex.Message
+                });
             }
         }
+
+
+        //[HttpGet("dashboard")]
+        //public async Task<IActionResult> GetDashboardSummary()
+        //{
+        //    try
+        //    {
+        //        var summary = new
+        //        {
+        //            Students = 0,
+        //            Users = 0,
+        //            Professors = 0,
+        //            Programmes = 0,
+        //            Books = 0,
+        //            Exams = 0,
+        //            Assignments = 0,
+        //            LiveClasses = 0,
+        //            Tasks = 0,
+        //            Leaves = 0
+        //        };
+
+        //        using (var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        //        using (var cmd = new SqlCommand("sp_AdminSummary_GetDashboard", conn))
+        //        {
+        //            cmd.CommandType = CommandType.StoredProcedure;
+        //            await conn.OpenAsync();
+        //            var reader = await cmd.ExecuteReaderAsync();
+        //            if (await reader.ReadAsync())
+        //            {
+        //                summary = new
+        //                {
+        //                    Students = Convert.ToInt32(reader["StudentCount"]),
+        //                    Users = Convert.ToInt32(reader["UsersCount"]),
+        //                    Professors = Convert.ToInt32(reader["ProfessorCount"]),
+        //                    Programmes = Convert.ToInt32(reader["ProgrammeCount"]),
+        //                    Books = Convert.ToInt32(reader["BookCount"]),
+        //                    Exams = Convert.ToInt32(reader["ExamCount"]),
+        //                    Assignments = Convert.ToInt32(reader["AssignmentCount"]),
+        //                    LiveClasses = Convert.ToInt32(reader["LiveClassCount"]),
+        //                    Tasks = Convert.ToInt32(reader["TaskCount"]),
+        //                    Leaves = Convert.ToInt32(reader["LeaveCount"])
+        //                };
+        //            }
+        //        }
+
+        //        return Ok(summary);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(500, new { error = "Failed to fetch dashboard summary", details = ex.Message });
+        //    }
+        //}
     }
 }

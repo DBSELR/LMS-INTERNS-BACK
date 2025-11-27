@@ -9,6 +9,8 @@ using System.Collections.Generic;
 using System;
 using LMS.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 
 namespace LMS.Controllers
 {
@@ -434,7 +436,127 @@ namespace LMS.Controllers
             return urlOrPath.StartsWith("/") || urlOrPath.IndexOfAny(new[] { '\\', '/' }) >= 0;
         }
 
+        //private string GetConnectionString() =>
+        //    _configuration.GetConnectionString("DefaultConnection");
 
+        private int GetUserIdFromJwt()
+        {
+            // Adjust claim type to whatever you are using ("UserId", "userid", etc.)
+            var userIdClaim = User.FindFirst("UserId")
+                             ?? User.FindFirst(ClaimTypes.NameIdentifier);
+
+            if (userIdClaim == null)
+                throw new Exception("UserId claim not found in token.");
+
+            return int.Parse(userIdClaim.Value);
+        }
+
+        // 🔹 Student updates progress (called from React page)
+        [HttpPost("updateprogress")]
+        [Authorize(Roles = "Student")] // adjust if needed
+        public async Task<IActionResult> UpdateProgress([FromBody] ContentProgressUpdateDto dto)
+        {
+            if (dto == null)
+                return BadRequest("Invalid payload.");
+
+            if (dto.ProgressPercent < 0 || dto.ProgressPercent > 100)
+                return BadRequest("ProgressPercent must be between 0 and 100.");
+
+            int studentId;
+            try
+            {
+                studentId = GetUserIdFromJwt();
+            }
+            catch (Exception ex)
+            {
+                return Unauthorized(ex.Message);
+            }
+
+            try
+            {
+                using (var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+                using (var cmd = new SqlCommand("sp_UpsertContentProgress", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+
+                    cmd.Parameters.AddWithValue("@StudentId", studentId);
+                    cmd.Parameters.AddWithValue("@ContentId", dto.ContentId);
+                    cmd.Parameters.AddWithValue("@ProgressPercent", dto.ProgressPercent);
+
+                    await conn.OpenAsync();
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                // you can log ex here with ILogger
+                return StatusCode(500, "Error saving progress: " + ex.Message);
+            }
+        }
+
+        // 🔹 Admin/Instructor view stats for a single content
+        [HttpGet("Progressstats/{contentId:int}")]
+        [Authorize(Roles = "Admin,Instructor")]
+        public async Task<IActionResult> GetContentStats(int contentId)
+        {
+            try
+            {
+                using (var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+                using (var cmd = new SqlCommand("sp_GetContentProgressStats", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@ContentId", contentId);
+
+                    await conn.OpenAsync();
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            var result = new
+                            {
+                                ContentId = reader["ContentId"],
+                                TotalOpened = reader["TotalOpened"],
+                                TotalCompleted = reader["TotalCompleted"],
+                                AvgProgress = reader["AvgProgress"]
+                            };
+
+                            return Ok(result);
+                        }
+                    }
+                }
+
+                // if no rows, return zeros
+                return Ok(new
+                {
+                    ContentId = contentId,
+                    TotalOpened = 0,
+                    TotalCompleted = 0,
+                    AvgProgress = 0
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "Error reading stats: " + ex.Message);
+            }
+        }
+
+        [HttpGet("GetCourseReadPercent")]
+        public async Task<IActionResult> GetCourseReadPercent(int InstructorId)
+        {
+            var result = new List<object>();
+            using var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+            using var cmd = new SqlCommand("sp_CourseReadPercent", conn)
+            { CommandType = CommandType.StoredProcedure };
+            cmd.Parameters.AddWithValue("@InstructorId", InstructorId);
+            await conn.OpenAsync();
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+                result.Add(ReadRow(reader));
+
+            return Ok(result);
+        }
 
 
     }
