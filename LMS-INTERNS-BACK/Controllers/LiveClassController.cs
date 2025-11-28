@@ -439,9 +439,17 @@ namespace LMS.Controllers
                 CommandType = CommandType.StoredProcedure
             };
 
+            DateTime istTime = TimeZoneInfo.ConvertTimeFromUtc(
+    DateTime.UtcNow,
+    TimeZoneInfo.FindSystemTimeZoneById("India Standard Time")
+);
+
+            // Save istTime to DB
+
+
             cmd.Parameters.AddWithValue("@StudentId", dto.StudentId);
             cmd.Parameters.AddWithValue("@Examinationid", dto.ExaminationId);
-            cmd.Parameters.AddWithValue("@JoinTime", dto.JoinTime.Date);
+            cmd.Parameters.Add("@JoinTime", System.Data.SqlDbType.DateTime2).Value = istTime;
             cmd.Parameters.AddWithValue("@Status", dto.Status);
             cmd.Parameters.AddWithValue("@LiveClassId", dto.LiveClassId);
 
@@ -450,6 +458,22 @@ namespace LMS.Controllers
 
             return Ok("✅ Attendance marked successfully");
 
+        }
+
+        [HttpGet("GetLiveclassAttPercent")]
+        public async Task<IActionResult> GetCourseReadPercent(int InstructorId)
+        {
+            var result = new List<object>();
+            using var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+            using var cmd = new SqlCommand("sp_LiveclassAttPercent", conn)
+            { CommandType = CommandType.StoredProcedure };
+            cmd.Parameters.AddWithValue("@InstructorId", InstructorId);
+            await conn.OpenAsync();
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+                result.Add(ReadRow(reader));
+
+            return Ok(result);
         }
 
         [HttpPost("UploadLiveClass")]

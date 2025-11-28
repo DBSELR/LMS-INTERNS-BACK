@@ -37,7 +37,8 @@ namespace LMS.Controllers
                     LiveClasses = 0,
                     Tasks = 0,
                     Leaves = 0,
-                    ContentReadPercentPerBatch = 0m   
+                    ContentReadPercentPerBatch = 0m,
+                    liveClassAttendancePercentPerBatch = 0m
                 };
 
                 using (var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
@@ -65,7 +66,11 @@ namespace LMS.Controllers
                                 ContentReadPercentPerBatch =
                                     reader["ContentReadPercentPerBatch"] == DBNull.Value
                                         ? 0m
-                                        : Convert.ToDecimal(reader["ContentReadPercentPerBatch"]) // 👈 reading decimal(5,2)
+                                        : Convert.ToDecimal(reader["ContentReadPercentPerBatch"]) ,
+                                liveClassAttendancePercentPerBatch =
+                                    reader["LiveClassAttendancePercentPerBatch"] == DBNull.Value
+                                        ? 0m
+                                        : Convert.ToDecimal(reader["LiveClassAttendancePercentPerBatch"])
                             };
                         }
                     }
