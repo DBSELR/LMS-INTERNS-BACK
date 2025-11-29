@@ -558,6 +558,22 @@ namespace LMS.Controllers
             return Ok(result);
         }
 
+        [HttpGet("GetCourseReadPercentByStudents")]
+        public async Task<IActionResult> GetCourseReadPercentByStudents(int InstructorId)
+        {
+            var result = new List<object>();
+            using var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+            using var cmd = new SqlCommand("sp_CourseReadPercentByStudents", conn)
+            { CommandType = CommandType.StoredProcedure };
+            cmd.Parameters.AddWithValue("@InstructorId", InstructorId);
+            await conn.OpenAsync();
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+                result.Add(ReadRow(reader));
+
+            return Ok(result);
+        }
+
 
     }
 
