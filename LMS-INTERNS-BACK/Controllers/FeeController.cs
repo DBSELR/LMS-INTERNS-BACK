@@ -59,7 +59,8 @@ public class FeeController : ControllerBase
                 PaymentDate = reader.IsDBNull(6) ? null : reader.GetDateTime(6),
                  Installment = reader.GetInt32(7),
                 Hid = reader.GetInt32(8),
-                FeeHead = reader.GetString(9)
+                ftid = reader.GetInt32(9),
+                FeeHead = reader.GetString(10)
             });
         }
 
@@ -118,15 +119,16 @@ public class FeeController : ControllerBase
             result.Add(new FeeSummaryDto
             {
                 StudentId = reader.IsDBNull(0) ? 0 : reader.GetInt32(0),
-                Installment = reader.IsDBNull(1) ? 0 : reader.GetInt32(1),
-                AmountDue = reader.IsDBNull(2) ? 0 : reader.GetDecimal(2),
+                SemesterFeeTemplateId = reader.IsDBNull(1) ? 0 : reader.GetInt32(1),
+                Installment = reader.IsDBNull(2) ? 0 : reader.GetInt32(2),
+                AmountDue = reader.IsDBNull(3) ? 0 : reader.GetDecimal(3),
                
                 //DueDate = reader.IsDBNull(3) ? (DateTime?)null : reader.GetDateTime(3)
-                DueDate = reader.IsDBNull(3) ? DateTime.MinValue : reader.GetDateTime(3),
-                Hid = reader.IsDBNull(4) ? 0 : reader.GetInt32(4), 
-                FeeHead = reader.IsDBNull(5) ? "" : reader.GetString(5),
-                Paid = reader.IsDBNull(6) ? 0 : reader.GetDecimal(6),
-                Remarks = reader.IsDBNull(7) ? "" : reader.GetString(7)
+                DueDate = reader.IsDBNull(4) ? DateTime.MinValue : reader.GetDateTime(4),
+                Hid = reader.IsDBNull(5) ? 0 : reader.GetInt32(5), 
+                FeeHead = reader.IsDBNull(6) ? "" : reader.GetString(6),
+                Paid = reader.IsDBNull(7) ? 0 : reader.GetDecimal(7),
+                Remarks = reader.IsDBNull(8) ? "" : reader.GetString(8)
             });
         }
 
@@ -204,6 +206,7 @@ public class FeeController : ControllerBase
         cmd.Parameters.AddWithValue("@Installment", dto.Installment); // Fix this name
         cmd.Parameters.AddWithValue("@PaymentMethod", dto.PaymentMethod ?? "Cash");
         cmd.Parameters.AddWithValue("@TransactionId", dto.TransactionId ?? string.Empty);
+        cmd.Parameters.AddWithValue("@SemesterFeeTemplateId", dto.SemesterFeeTemplateId);
         cmd.Parameters.AddWithValue("@HeadID", dto.payHeadID);
         cmd.Parameters.AddWithValue("@Now", DateTime.UtcNow);
         try

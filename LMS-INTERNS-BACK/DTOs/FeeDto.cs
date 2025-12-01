@@ -76,6 +76,8 @@ namespace LMS.DTOs
         public DateTime DueDate { get; set; }
         public DateTime? PaymentDate { get; set; }
         public int Installment { get; set; }
+
+        public int SemesterFeeTemplateId { get; set; }
         public decimal Fee { get; set; }
         public decimal Paid { get; set; }
         public decimal Due { get; set; }
@@ -103,6 +105,7 @@ namespace LMS.DTOs
         public string TransactionId { get; set; }
         public int Installment { get; set; }
         public int payHeadID { get; set; }
+        public int SemesterFeeTemplateId { get; set; }
     }
 
     public class SemesterFeeRequest
