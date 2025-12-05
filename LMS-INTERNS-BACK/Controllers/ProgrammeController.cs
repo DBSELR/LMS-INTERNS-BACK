@@ -8,6 +8,7 @@ using System.Data;
 using Microsoft.Extensions.Configuration;
 using static ExaminationController;
 using Microsoft.AspNetCore.Authorization;
+using System.ComponentModel.DataAnnotations;
 
 namespace LMS.Controllers
 {
@@ -501,11 +502,54 @@ namespace LMS.Controllers
             return NoContent();
         }
 
+        //[HttpPost("insertBatches")]
+        //public async Task<IActionResult> UpsertBatches([FromBody] List<BatchesDto> batch)
+        //{
+        //    if (batch == null || batch.Count == 0)
+        //        return BadRequest(new { message = "No batch provided." });
+
+        //    try
+        //    {
+        //        using (SqlConnection conn = new SqlConnection(_connection))
+        //        {
+        //            await conn.OpenAsync();
+
+        //            foreach (var dto in batch)
+        //            {
+        //                using (SqlCommand cmd = new SqlCommand("Sp_UpsertBatches", conn))
+        //                {
+        //                    cmd.CommandType = CommandType.StoredProcedure;
+
+        //                    cmd.Parameters.AddWithValue("@Bid", dto.Bid);
+        //                    cmd.Parameters.AddWithValue("@BatchName", dto.BatchName);
+        //                    cmd.Parameters.AddWithValue("@Pid", dto.Pid);
+        //                    //cmd.Parameters.AddWithValue("@Gid", dto.Gid);
+        //                    cmd.Parameters.AddWithValue("@StartDate", dto.StartDate);
+        //                    cmd.Parameters.AddWithValue("@EndDate", dto.EndDate);
+        //                    cmd.Parameters.AddWithValue("@Fee", dto.Fee);
+        //                    cmd.Parameters.AddWithValue("@university", dto.university);
+
+        //                    await cmd.ExecuteNonQueryAsync();
+        //                }
+        //            }
+        //        }
+
+        //        return Ok(new { message = "Batch saved successfully" });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(500, new { message = "Database error", error = ex.Message });
+        //    }
+        //}
+
         [HttpPost("insertBatches")]
         public async Task<IActionResult> UpsertBatches([FromBody] List<BatchesDto> batch)
         {
             if (batch == null || batch.Count == 0)
                 return BadRequest(new { message = "No batch provided." });
+
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
 
             try
             {
@@ -520,13 +564,19 @@ namespace LMS.Controllers
                             cmd.CommandType = CommandType.StoredProcedure;
 
                             cmd.Parameters.AddWithValue("@Bid", dto.Bid);
-                            cmd.Parameters.AddWithValue("@BatchName", dto.BatchName);
+                            cmd.Parameters.AddWithValue("@BatchName", dto.Batch ?? string.Empty);
                             cmd.Parameters.AddWithValue("@Pid", dto.Pid);
-                            //cmd.Parameters.AddWithValue("@Gid", dto.Gid);
+
                             cmd.Parameters.AddWithValue("@StartDate", dto.StartDate);
                             cmd.Parameters.AddWithValue("@EndDate", dto.EndDate);
-                            cmd.Parameters.AddWithValue("@Fee", dto.Fee);
-                            cmd.Parameters.AddWithValue("@university", dto.university);
+
+                            // Always NULL to DB (you don’t want it now)
+                            var pFee = cmd.Parameters.Add("@Fee", SqlDbType.Decimal);
+                            pFee.Precision = 18;
+                            pFee.Scale = 2;
+                            pFee.Value = DBNull.Value;
+
+                            cmd.Parameters.AddWithValue("@university", DBNull.Value);
 
                             await cmd.ExecuteNonQueryAsync();
                         }
@@ -540,6 +590,7 @@ namespace LMS.Controllers
                 return StatusCode(500, new { message = "Database error", error = ex.Message });
             }
         }
+
 
 
         [HttpGet("GetAllBatch")]
@@ -636,6 +687,94 @@ namespace LMS.Controllers
             return Ok(result);
         }
 
+        [HttpGet("GetDbsInternsColleges")]
+        public async Task<IActionResult> GetDbsInternsColleges()
+        {
+            var result = new List<object>();
+            using var conn = new SqlConnection(_connection);
+            using var cmd = new SqlCommand("sp_GetDbsInternsColleges", conn)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
+           // cmd.Parameters.AddWithValue("@ProgrammeId", pid);
+
+            await conn.OpenAsync();
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+                result.Add(ReadRow(reader));
+
+            return Ok(result);
+        }
+
+        [HttpGet("GetDbsInternsCourses")]
+        public async Task<IActionResult> GetDbsInternsCourses(int ColId)
+        {
+            var result = new List<object>();
+            using var conn = new SqlConnection(_connection);
+            using var cmd = new SqlCommand("sp_GetDbsInternsCoursesByCollege", conn)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
+             cmd.Parameters.AddWithValue("@ColId", ColId);
+
+            await conn.OpenAsync();
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+                result.Add(ReadRow(reader));
+
+            return Ok(result);
+        }
+
+        [HttpGet("GetFutureBatches")]
+        public async Task<IActionResult> GetFutureBatches(int? programmeId)
+        {
+            var result = new List<FutureBatchDto>();
+
+            try
+            {
+                using (var conn = new SqlConnection(_connection))
+                using (var cmd = new SqlCommand("Sp_GetFutureBatchesByProgramme", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+
+                    var p = cmd.Parameters.Add("@ProgrammeId", SqlDbType.Int);
+                    if (programmeId.HasValue && programmeId.Value > 0)
+                        p.Value = programmeId.Value;   // filter
+                    else
+                        p.Value = DBNull.Value;        // no filter → all future batches
+
+                    await conn.OpenAsync();
+
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            var dto = new FutureBatchDto
+                            {
+                                Bid = reader.GetInt32(reader.GetOrdinal("Bid")),
+                                Batch = reader.GetString(reader.GetOrdinal("Batch")),
+                                StartDate = reader.GetDateTime(reader.GetOrdinal("StartDate")),
+                                EndDate = reader.GetDateTime(reader.GetOrdinal("EndDate")),
+                                ProgrammeId = reader.GetInt32(reader.GetOrdinal("ProgrammeId")),
+                                ProgrammeCode = reader["ProgrammeCode"] as string,
+                                ProgrammeName = reader["ProgrammeName"] as string
+                            };
+
+                            result.Add(dto);
+                        }
+                    }
+                }
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Database error", error = ex.Message });
+            }
+        }
+
         //[HttpGet("GetGroupsByBatchandProgramme")]
         //public async Task<IActionResult> GetGroupsByBatchandProgramme(string batch)
         //{
@@ -684,17 +823,90 @@ namespace LMS.Controllers
             return Ok(result);
         }
 
+        [HttpPost("UpdateStudentBatchByCollege")]
+        public async Task<IActionResult> UpdateStudentBatchByCollege(
+        [FromBody] UpdateStudentBatchByCollegeRequest request)
+        {
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
+            try
+            {
+                string message = "Students Batch updated successfully";
+
+                using (var conn = new SqlConnection(_connection))
+                using (var cmd = new SqlCommand("sp_Student_UpdateStudentBatchByCollege", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+
+                    cmd.Parameters.AddWithValue("@ColId", request.ColId);
+                    cmd.Parameters.AddWithValue("@BatchName", request.BatchName ?? string.Empty);
+                    cmd.Parameters.AddWithValue("@ProgrammeId", request.ProgrammeId);
+
+                    await conn.OpenAsync();
+
+                    // Your proc returns: SELECT 'Students Batch updated successfully' AS Message;
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            var msgObj = reader["Message"] as string;
+                            if (!string.IsNullOrWhiteSpace(msgObj))
+                                message = msgObj;
+                        }
+                    }
+                }
+
+                return Ok(new { message });
+            }
+            catch (System.Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "Database error while updating student batch.",
+                    error = ex.Message
+                });
+            }
+        }
+
+        public class UpdateStudentBatchByCollegeRequest
+        {
+            public int ColId { get; set; }
+            public string BatchName { get; set; }
+            public int ProgrammeId { get; set; }
+        }
         public class BatchesDto
         {
-            public int Bid { get; set; } = 0;
-            public string BatchName { get; set; }
-            public int Pid { get; set; } 
-          //  public int Gid { get; set; } 
+        public int Bid { get; set; }
+
+        [Required]
+        public string Batch { get; set; }
+
+        public int Pid { get; set; }
+
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+
+        // Fee optional now; you don't want to use it
+        public decimal? Fee { get; set; }
+
+        public string? university { get; set; }
+        }
+
+        public class FutureBatchDto
+        {
+            public int Bid { get; set; }
+            public string Batch { get; set; }
             public DateTime StartDate { get; set; }
             public DateTime EndDate { get; set; }
-            public decimal Fee { get; set; }
-            public string university { get; set; }
+
+            public int ProgrammeId { get; set; }
+            public string ProgrammeCode { get; set; }
+            public string ProgrammeName { get; set; }
         }
+
+
+
     }
 }
 

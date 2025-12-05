@@ -370,9 +370,26 @@ namespace LMS.Controllers
             return Ok(result);
         }
 
+        [HttpGet("GetFeeCollegesbyUniversity")]
+        public async Task<IActionResult> GetFeeCollegesbyUniversity(string uname)
+        {
+            var result = new List<object>();
+            using var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+            using var cmd = new SqlCommand("sp_GetFeeCollegesbyUniversity", conn)
+            { CommandType = CommandType.StoredProcedure };
+            cmd.Parameters.AddWithValue("@uname", uname);
+            await conn.OpenAsync();
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+                result.Add(ReadRow(reader));
+
+            return Ok(result);
+        }
+
         public class AssignRoleRequest
         {
             public string Role { get; set; }
         }
+
     }
 }
