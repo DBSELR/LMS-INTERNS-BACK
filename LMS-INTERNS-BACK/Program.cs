@@ -107,6 +107,7 @@ using LMS.Services;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.SignalR;
+using LMS.Models;   // PhonePeSdkOptions
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -267,12 +268,22 @@ builder.Services.AddHttpClient();
 //    options.AddPolicy("StudentOnly", policy => policy.RequireRole("Student"));
 //});
 
+
+// ======================
+// ✅ PhonePe SDK options + service
+// ======================
+builder.Services.Configure<PhonePeSdkOptions>(
+    builder.Configuration.GetSection("PhonePe"));
+builder.Services.AddScoped<PhonePeService>();
+
+
+
 // ✅ Enable CORS for React app
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "https://uginterns.dbasesolutions.in", "https://www.uginterns.dbasesolutions.in", "https://interns.dbasesolutions.in", "https://www.interns.dbasesolutions.in")
+        policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "https://uginterns.dbasesolutions.in", "https://www.uginterns.dbasesolutions.in", "https://interns.dbasesolutions.in", "https://www.interns.dbasesolutions.in", "https://mercury-uat.phonepe.com")
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials(); //  CRITICAL for cookie/session use
@@ -350,6 +361,7 @@ app.UseAuthorization();             // 5. Authorization
 app.MapControllers();
 
 app.MapHub<SessionHub>("/sessionhub");
+
 
 
 app.Run();
