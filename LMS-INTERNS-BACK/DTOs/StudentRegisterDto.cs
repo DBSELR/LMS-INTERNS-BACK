@@ -24,6 +24,7 @@ namespace LMS.DTOs
         public int RefCode { get; set; }
         public int semester { get; set; }
         public string degree { get; set; }
-        
+        public string aBC_UniqueID { get; set; }
+
     }
 }

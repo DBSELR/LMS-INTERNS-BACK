@@ -10,6 +10,8 @@ using System;
 using LMS.Services;
 using Microsoft.AspNetCore.Authorization;
 using LMS.Models;
+using ClosedXML.Excel;
+using System.IO;
 
 namespace LMS.Controllers
 {
@@ -479,7 +481,8 @@ namespace LMS.Controllers
                 cmd.Parameters.AddWithValue("@ssem", request.semester);
                 cmd.Parameters.AddWithValue("@RefCode", request.RefCode);
                 cmd.Parameters.AddWithValue("@degree", (object?)request.degree ?? DBNull.Value);
-                
+                cmd.Parameters.AddWithValue("@aBC_UniqueID", (object?)request.aBC_UniqueID ?? DBNull.Value);
+
 
                 await conn.OpenAsync();
 
@@ -541,6 +544,250 @@ namespace LMS.Controllers
                 return StatusCode(500, new { error = $"Unexpected error: {ex.Message}" });
             }
         }
+
+        [HttpGet("register/sample-excel")]
+        [AllowAnonymous] // or keep it secured if you want
+        public IActionResult DownloadStudentSampleExcel()
+        {
+            using var workbook = new XLWorkbook();
+            var ws = workbook.Worksheets.Add("Students");
+
+            // Header row – MUST match what you expect from Excel
+            ws.Cell(1, 1).Value = "Username";
+            ws.Cell(1, 2).Value = "Email";
+            ws.Cell(1, 3).Value = "FirstName";
+            ws.Cell(1, 4).Value = "LastName";
+            ws.Cell(1, 5).Value = "PhoneNumber";
+            ws.Cell(1, 6).Value = "Gender";
+            ws.Cell(1, 7).Value = "DateOfBirth(yyyy-MM-dd)";
+            ws.Cell(1, 8).Value = "Address";
+            ws.Cell(1, 9).Value = "City";
+            ws.Cell(1, 10).Value = "State";
+            ws.Cell(1, 11).Value = "Country";
+            ws.Cell(1, 12).Value = "ZipCode";
+            ws.Cell(1, 13).Value = "Batch";          // BatchName
+            ws.Cell(1, 14).Value = "ProgrammeId";    // INT
+            ws.Cell(1, 15).Value = "Semester";       // INT
+            ws.Cell(1, 16).Value = "RefCode";        // College userId
+            ws.Cell(1, 17).Value = "Degree";
+            ws.Cell(1, 18).Value = "ABC_UniqueID";
+
+            // Optional: sample row
+            ws.Cell(2, 1).Value = "DBS20250001";
+            ws.Cell(2, 2).Value = "student1@example.com";
+            ws.Cell(2, 3).Value = "DBS";
+            ws.Cell(2, 4).Value = "ELR";
+            ws.Cell(2, 5).Value = "9876543210";
+            ws.Cell(2, 6).Value = "Male";
+            ws.Cell(2, 7).Value = "2004-06-15";
+            ws.Cell(2, 8).Value = "Some Street";
+            ws.Cell(2, 9).Value = "ELURU";
+            ws.Cell(2, 10).Value = "Andhra Pradesh";
+            ws.Cell(2, 11).Value = "India";
+            ws.Cell(2, 12).Value = "530001";
+            ws.Cell(2, 13).Value = "2024-27";
+            ws.Cell(2, 14).Value = 101; // ProgrammeId
+            ws.Cell(2, 15).Value = 1;   // Semester
+            ws.Cell(2, 16).Value = 123; // RefCode (college userId)
+            ws.Cell(2, 17).Value = "B Com Honours (General)";
+            ws.Cell(2, 18).Value = "ABC123456789012";
+
+            ws.Columns().AdjustToContents();
+
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            var content = stream.ToArray();
+
+            const string contentType =
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            const string fileName = "StudentImportTemplate.xlsx";
+
+            return File(content, contentType, fileName);
+        }
+
+        public class StudentBulkResultRow
+        {
+            public int RowNumber { get; set; }
+            public string Username { get; set; }
+            public bool Success { get; set; }
+            public string Error { get; set; }
+            public List<object> Conflicts { get; set; } = new();
+        }
+
+        [HttpPost("register/bulk")]
+        public async Task<IActionResult> RegisterBulk([FromForm] IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest(new { error = "Excel file is required." });
+
+            var results = new List<StudentBulkResultRow>();
+            var connStr = _configuration.GetConnectionString("DefaultConnection");
+
+            try
+            {
+                using var stream = file.OpenReadStream();
+                using var workbook = new XLWorkbook(stream);
+                var ws = workbook.Worksheets.First();
+
+                // Assuming header is row 1
+                int lastRow = ws.LastRowUsed().RowNumber();
+
+                for (int row = 2; row <= lastRow; row++)
+                {
+                    var result = new StudentBulkResultRow
+                    {
+                        RowNumber = row,
+                        Username = ws.Cell(row, 1).GetString().Trim()
+                    };
+
+                    try
+                    {
+                        if (string.IsNullOrWhiteSpace(result.Username))
+                        {
+                            result.Success = false;
+                            result.Error = "Username is empty.";
+                            results.Add(result);
+                            continue;
+                        }
+
+                        // Map Excel row → StudentRegisterDto
+                        var dto = new StudentRegisterDto
+                        {
+                            Username = ws.Cell(row, 1).GetString().Trim(),
+                            Email = ws.Cell(row, 2).GetString().Trim(),
+                            FirstName = ws.Cell(row, 3).GetString().Trim(),
+                            LastName = ws.Cell(row, 4).GetString().Trim(),
+                            PhoneNumber = ws.Cell(row, 5).GetString().Trim(),
+                            Gender = ws.Cell(row, 6).GetString().Trim(),
+                            Address = ws.Cell(row, 8).GetString().Trim(),
+                            City = ws.Cell(row, 9).GetString().Trim(),
+                            State = ws.Cell(row, 10).GetString().Trim(),
+                            Country = ws.Cell(row, 11).GetString().Trim(),
+                            ZipCode = ws.Cell(row, 12).GetString().Trim(),
+                            Batch = ws.Cell(row, 13).GetString().Trim(),
+                            degree = ws.Cell(row, 17).GetString().Trim(),
+                            aBC_UniqueID = ws.Cell(row, 18).GetString().Trim()
+                        };
+
+                        // DateOfBirth
+                        var dobCell = ws.Cell(row, 7);
+                        if (!dobCell.IsEmpty())
+                        {
+                            if (dobCell.DataType == XLDataType.DateTime ||
+                                dobCell.DataType == XLDataType.Number)
+                            {
+                                dto.DateOfBirth = dobCell.GetDateTime();
+                            }
+                            else
+                            {
+                                if (DateTime.TryParse(dobCell.GetString(), out var parsedDob))
+                                    dto.DateOfBirth = parsedDob;
+                            }
+                        }
+
+                        // ProgrammeId INT
+                        dto.programmeId = ws.Cell(row, 14).GetValue<int>();
+
+                        // Semester INT
+                        dto.semester = ws.Cell(row, 15).GetValue<int>();
+
+                        // RefCode INT (college userId)
+                        dto.RefCode = ws.Cell(row, 16).GetValue<int>();
+
+                        // Now call same SP logic directly (copy from your Register method)
+                        var rawPassword = dto.Username.Trim();
+                        var hashedPassword = BCrypt.Net.BCrypt.HashPassword(rawPassword);
+
+                        await using var conn = new SqlConnection(connStr);
+                        await using var cmd = new SqlCommand("sp_Student_Register", conn)
+                        { CommandType = CommandType.StoredProcedure };
+
+                        cmd.Parameters.AddWithValue("@Username", dto.Username?.Trim() ?? string.Empty);
+                        cmd.Parameters.AddWithValue("@Email", dto.Email ?? string.Empty);
+                        cmd.Parameters.AddWithValue("@PasswordHash", hashedPassword);
+                        cmd.Parameters.AddWithValue("@FirstName", dto.FirstName ?? string.Empty);
+                        cmd.Parameters.AddWithValue("@LastName", dto.LastName ?? string.Empty);
+                        cmd.Parameters.AddWithValue("@PhoneNumber", dto.PhoneNumber ?? string.Empty);
+                        cmd.Parameters.AddWithValue("@Gender", (object?)dto.Gender ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@DateOfBirth", (object?)dto.DateOfBirth ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@ProfilePhotoUrl", (object?)dto.ProfilePhotoUrl ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@Address", (object?)dto.Address ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@City", (object?)dto.City ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@State", (object?)dto.State ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@Country", (object?)dto.Country ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@ZipCode", (object?)dto.ZipCode ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@BatchName", (object?)dto.Batch ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@ProgrammeId", dto.programmeId);
+                        cmd.Parameters.AddWithValue("@Jsem", dto.semester);
+                        cmd.Parameters.AddWithValue("@ssem", dto.semester);
+                        cmd.Parameters.AddWithValue("@RefCode", dto.RefCode);
+                        cmd.Parameters.AddWithValue("@degree", (object?)dto.degree ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@aBC_UniqueID", (object?)dto.aBC_UniqueID ?? DBNull.Value);
+
+                        await conn.OpenAsync();
+                        using var reader = await cmd.ExecuteReaderAsync();
+
+                        var conflicts = new List<object>();
+                        bool gotAnyRows = false;
+                        bool success = false;
+
+                        while (await reader.ReadAsync())
+                        {
+                            gotAnyRows = true;
+                            success = reader.GetBoolean(reader.GetOrdinal("Success"));
+
+                            if (!success)
+                            {
+                                var ctOrd = reader.GetOrdinal("ConflictType");
+                                var dtOrd = reader.GetOrdinal("Details");
+                                var conflictType = reader.IsDBNull(ctOrd) ? null : reader.GetString(ctOrd);
+                                var details = reader.IsDBNull(dtOrd) ? null : reader.GetString(dtOrd);
+                                conflicts.Add(new { ConflictType = conflictType, Details = details });
+                            }
+                        }
+
+                        if (!gotAnyRows)
+                        {
+                            result.Success = false;
+                            result.Error = "No response from stored procedure.";
+                        }
+                        else if (!success)
+                        {
+                            result.Success = false;
+                            result.Error = "Duplicate fields found.";
+                            result.Conflicts = conflicts;
+                        }
+                        else
+                        {
+                            result.Success = true;
+                        }
+                    }
+                    catch (Exception exRow)
+                    {
+                        result.Success = false;
+                        result.Error = exRow.Message;
+                    }
+
+                    results.Add(result);
+                }
+
+                var summary = new
+                {
+                    total = results.Count,
+                    success = results.Count(r => r.Success),
+                    failed = results.Count(r => !r.Success),
+                    rows = results
+                };
+
+                return Ok(summary);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = $"Bulk upload failed: {ex.Message}" });
+            }
+        }
+
+
 
 
         [HttpPost("Landingregister")]
