@@ -24,7 +24,6 @@ namespace LMS.Controllers
         {
             try
             {
-                // Default summary with all fields, including new % field
                 var summary = new
                 {
                     Students = 0,
@@ -38,7 +37,9 @@ namespace LMS.Controllers
                     Tasks = 0,
                     Leaves = 0,
                     ContentReadPercentPerBatch = 0m,
-                    liveClassAttendancePercentPerBatch = 0m
+                    liveClassAttendancePercentPerBatch = 0m,
+                    ObjectiveExamAttendancePercentPerBatch = 0m,
+                    SubjectiveExamAttendancePercentPerBatch = 0m
                 };
 
                 using (var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
@@ -66,11 +67,19 @@ namespace LMS.Controllers
                                 ContentReadPercentPerBatch =
                                     reader["ContentReadPercentPerBatch"] == DBNull.Value
                                         ? 0m
-                                        : Convert.ToDecimal(reader["ContentReadPercentPerBatch"]) ,
+                                        : Convert.ToDecimal(reader["ContentReadPercentPerBatch"]),
                                 liveClassAttendancePercentPerBatch =
                                     reader["LiveClassAttendancePercentPerBatch"] == DBNull.Value
                                         ? 0m
-                                        : Convert.ToDecimal(reader["LiveClassAttendancePercentPerBatch"])
+                                        : Convert.ToDecimal(reader["LiveClassAttendancePercentPerBatch"]),
+                                ObjectiveExamAttendancePercentPerBatch =
+                                    reader["ObjectiveExamAttendancePercentPerBatch"] == DBNull.Value
+                                        ? 0m
+                                        : Convert.ToDecimal(reader["ObjectiveExamAttendancePercentPerBatch"]),
+                                SubjectiveExamAttendancePercentPerBatch =
+                                    reader["SubjectiveExamAttendancePercentPerBatch"] == DBNull.Value
+                                        ? 0m
+                                        : Convert.ToDecimal(reader["SubjectiveExamAttendancePercentPerBatch"])
                             };
                         }
                     }
@@ -87,6 +96,7 @@ namespace LMS.Controllers
                 });
             }
         }
+
 
 
         //[HttpGet("dashboard")]
