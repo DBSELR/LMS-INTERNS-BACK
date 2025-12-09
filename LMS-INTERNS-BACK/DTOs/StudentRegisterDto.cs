@@ -27,4 +27,24 @@ namespace LMS.DTOs
         public string aBC_UniqueID { get; set; }
 
     }
+
+    public class StudentBulkRegisterDto
+    {
+        public string Username { get; set; } = "";
+        public string aBC_UniqueID { get; set; }
+        public string Email { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public string PhoneNumber { get; set; }
+        public DateTime? DateOfBirth { get; set; }
+        public string Gender { get; set; }
+        public string CourseCode { get; set; }
+        public string degree { get; set; }
+        public string Address { get; set; }
+        public string University { get; set; }
+        public string ColCode { get; set; }
+       
+       
+
+    }
 }

@@ -553,44 +553,32 @@ namespace LMS.Controllers
             var ws = workbook.Worksheets.Add("Students");
 
             // Header row – MUST match what you expect from Excel
-            ws.Cell(1, 1).Value = "Username";
-            ws.Cell(1, 2).Value = "Email";
-            ws.Cell(1, 3).Value = "FirstName";
-            ws.Cell(1, 4).Value = "LastName";
-            ws.Cell(1, 5).Value = "PhoneNumber";
-            ws.Cell(1, 6).Value = "Gender";
-            ws.Cell(1, 7).Value = "DateOfBirth(yyyy-MM-dd)";
-            ws.Cell(1, 8).Value = "Address";
-            ws.Cell(1, 9).Value = "City";
-            ws.Cell(1, 10).Value = "State";
-            ws.Cell(1, 11).Value = "Country";
-            ws.Cell(1, 12).Value = "ZipCode";
-            ws.Cell(1, 13).Value = "Batch";          // BatchName
-            ws.Cell(1, 14).Value = "ProgrammeId";    // INT
-            ws.Cell(1, 15).Value = "Semester";       // INT
-            ws.Cell(1, 16).Value = "RefCode";        // College userId
-            ws.Cell(1, 17).Value = "Degree";
-            ws.Cell(1, 18).Value = "ABC_UniqueID";
+            ws.Cell(1, 1).Value = "Registration Number";
+            ws.Cell(1, 2).Value = "ABC ID";
+            ws.Cell(1, 3).Value = "Email";
+            ws.Cell(1, 4).Value = "Name(As per SSC)";
+            ws.Cell(1, 5).Value = "Mobile Number";
+            ws.Cell(1, 6).Value = "DateOfBirth(yyyy-MM-dd)";
+            ws.Cell(1, 7).Value = "Gender";
+            ws.Cell(1, 8).Value = "Internship Course Code";
+            ws.Cell(1, 9).Value = "Pursuing Degree";
+            ws.Cell(1, 10).Value = "Address";
+            ws.Cell(1, 11).Value = "University";
+            ws.Cell(1, 12).Value = "College Code";
 
             // Optional: sample row
             ws.Cell(2, 1).Value = "DBS20250001";
-            ws.Cell(2, 2).Value = "student1@example.com";
-            ws.Cell(2, 3).Value = "DBS";
-            ws.Cell(2, 4).Value = "ELR";
+            ws.Cell(2, 2).Value = "ABC123456789012";
+            ws.Cell(2, 3).Value = "student1@example.com";
+            ws.Cell(2, 4).Value = "DBS ELR";
             ws.Cell(2, 5).Value = "9876543210";
-            ws.Cell(2, 6).Value = "Male";
-            ws.Cell(2, 7).Value = "2004-06-15";
-            ws.Cell(2, 8).Value = "Some Street";
-            ws.Cell(2, 9).Value = "ELURU";
-            ws.Cell(2, 10).Value = "Andhra Pradesh";
-            ws.Cell(2, 11).Value = "India";
-            ws.Cell(2, 12).Value = "530001";
-            ws.Cell(2, 13).Value = "2024-27";
-            ws.Cell(2, 14).Value = 101; // ProgrammeId
-            ws.Cell(2, 15).Value = 1;   // Semester
-            ws.Cell(2, 16).Value = 123; // RefCode (college userId)
-            ws.Cell(2, 17).Value = "B Com Honours (General)";
-            ws.Cell(2, 18).Value = "ABC123456789012";
+            ws.Cell(2, 6).Value = "2004-06-15";
+            ws.Cell(2, 7).Value = "Male";
+            ws.Cell(2, 8).Value = "C01";
+            ws.Cell(2, 9).Value = "B SC Honours";
+            ws.Cell(2, 10).Value = "ELURU";
+            ws.Cell(2, 11).Value = "AU";
+            ws.Cell(2, 12).Value = "001";
 
             ws.Columns().AdjustToContents();
 
@@ -651,26 +639,25 @@ namespace LMS.Controllers
                         }
 
                         // Map Excel row → StudentRegisterDto
-                        var dto = new StudentRegisterDto
+                        var dto = new StudentBulkRegisterDto
                         {
                             Username = ws.Cell(row, 1).GetString().Trim(),
-                            Email = ws.Cell(row, 2).GetString().Trim(),
-                            FirstName = ws.Cell(row, 3).GetString().Trim(),
+                            aBC_UniqueID = ws.Cell(row, 2).GetString().Trim(),
+                            Email = ws.Cell(row, 3).GetString().Trim(),
+                            FirstName = ws.Cell(row, 4).GetString().Trim(),
                             LastName = ws.Cell(row, 4).GetString().Trim(),
                             PhoneNumber = ws.Cell(row, 5).GetString().Trim(),
-                            Gender = ws.Cell(row, 6).GetString().Trim(),
-                            Address = ws.Cell(row, 8).GetString().Trim(),
-                            City = ws.Cell(row, 9).GetString().Trim(),
-                            State = ws.Cell(row, 10).GetString().Trim(),
-                            Country = ws.Cell(row, 11).GetString().Trim(),
-                            ZipCode = ws.Cell(row, 12).GetString().Trim(),
-                            Batch = ws.Cell(row, 13).GetString().Trim(),
-                            degree = ws.Cell(row, 17).GetString().Trim(),
-                            aBC_UniqueID = ws.Cell(row, 18).GetString().Trim()
+                            Gender = ws.Cell(row, 7).GetString().Trim(),
+                            CourseCode = ws.Cell(row, 8).GetString().Trim(),
+                            degree = ws.Cell(row, 9).GetString().Trim(),
+                            Address = ws.Cell(row, 10).GetString().Trim(),
+                            University = ws.Cell(row, 11).GetString().Trim(),
+                            ColCode = ws.Cell(row, 12).GetString().Trim()
+
                         };
 
                         // DateOfBirth
-                        var dobCell = ws.Cell(row, 7);
+                        var dobCell = ws.Cell(row, 6);
                         if (!dobCell.IsEmpty())
                         {
                             if (dobCell.DataType == XLDataType.DateTime ||
@@ -685,21 +672,14 @@ namespace LMS.Controllers
                             }
                         }
 
-                        // ProgrammeId INT
-                        dto.programmeId = ws.Cell(row, 14).GetValue<int>();
-
-                        // Semester INT
-                        dto.semester = ws.Cell(row, 15).GetValue<int>();
-
-                        // RefCode INT (college userId)
-                        dto.RefCode = ws.Cell(row, 16).GetValue<int>();
+                        
 
                         // Now call same SP logic directly (copy from your Register method)
                         var rawPassword = dto.Username.Trim();
                         var hashedPassword = BCrypt.Net.BCrypt.HashPassword(rawPassword);
 
                         await using var conn = new SqlConnection(connStr);
-                        await using var cmd = new SqlCommand("sp_Student_Register", conn)
+                        await using var cmd = new SqlCommand("sp_Student_BulkRegister", conn)
                         { CommandType = CommandType.StoredProcedure };
 
                         cmd.Parameters.AddWithValue("@Username", dto.Username?.Trim() ?? string.Empty);
@@ -710,19 +690,12 @@ namespace LMS.Controllers
                         cmd.Parameters.AddWithValue("@PhoneNumber", dto.PhoneNumber ?? string.Empty);
                         cmd.Parameters.AddWithValue("@Gender", (object?)dto.Gender ?? DBNull.Value);
                         cmd.Parameters.AddWithValue("@DateOfBirth", (object?)dto.DateOfBirth ?? DBNull.Value);
-                        cmd.Parameters.AddWithValue("@ProfilePhotoUrl", (object?)dto.ProfilePhotoUrl ?? DBNull.Value);
                         cmd.Parameters.AddWithValue("@Address", (object?)dto.Address ?? DBNull.Value);
-                        cmd.Parameters.AddWithValue("@City", (object?)dto.City ?? DBNull.Value);
-                        cmd.Parameters.AddWithValue("@State", (object?)dto.State ?? DBNull.Value);
-                        cmd.Parameters.AddWithValue("@Country", (object?)dto.Country ?? DBNull.Value);
-                        cmd.Parameters.AddWithValue("@ZipCode", (object?)dto.ZipCode ?? DBNull.Value);
-                        cmd.Parameters.AddWithValue("@BatchName", (object?)dto.Batch ?? DBNull.Value);
-                        cmd.Parameters.AddWithValue("@ProgrammeId", dto.programmeId);
-                        cmd.Parameters.AddWithValue("@Jsem", dto.semester);
-                        cmd.Parameters.AddWithValue("@ssem", dto.semester);
-                        cmd.Parameters.AddWithValue("@RefCode", dto.RefCode);
                         cmd.Parameters.AddWithValue("@degree", (object?)dto.degree ?? DBNull.Value);
                         cmd.Parameters.AddWithValue("@aBC_UniqueID", (object?)dto.aBC_UniqueID ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@University", dto.University ?? string.Empty);
+                        cmd.Parameters.AddWithValue("@ColCode", dto.ColCode ?? string.Empty);
+                        cmd.Parameters.AddWithValue("@CourseCode", dto.CourseCode ?? string.Empty);
 
                         await conn.OpenAsync();
                         using var reader = await cmd.ExecuteReaderAsync();
@@ -787,6 +760,111 @@ namespace LMS.Controllers
             }
         }
 
+        [HttpGet("GetgetApprovependingstudentlist")]
+        public async Task<IActionResult> GetgetApprovependingstudentlist(int colid)
+        {
+            var result = new List<object>();
+            using var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+            using var cmd = new SqlCommand("sp_student_getpendinglist", conn)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
+            cmd.Parameters.AddWithValue("@colid", colid);
+
+            await conn.OpenAsync();
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+                result.Add(ReadRow(reader));
+
+            return Ok(result);
+        }
+
+        //[HttpPost("ApproveStudent/{userId}")]
+        //public IActionResult ApproveStudent(int userId)
+        //{
+        //    try
+        //    {
+        //        using var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+        //        using var cmd = new SqlCommand("sp_student_UpdateApprovestatus", conn);
+        //        cmd.CommandType = CommandType.StoredProcedure;
+        //        cmd.Parameters.Add("@userid", SqlDbType.Int).Value = userId;
+
+        //        conn.Open();
+        //        int rowsAffected = cmd.ExecuteNonQuery();
+
+        //        if (rowsAffected > 0)
+        //        {
+        //            return Ok(new { message = "Student approved successfully." });
+        //        }
+        //        else
+        //        {
+        //            return NotFound(new { message = "Student not found or already approved." });
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // log exception as needed
+        //        return StatusCode(500, new { message = "Internal server error.", error = ex.Message });
+        //    }
+        //}
+
+        [HttpPost("ApproveStudent/{userId}")]
+        public async Task<IActionResult> ApproveStudent(int userId)
+        {
+            try
+            {
+                await using var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+                await using var cmd = new SqlCommand("sp_student_UpdateApprovestatus", conn)
+                {
+                    CommandType = CommandType.StoredProcedure
+                };
+
+                cmd.Parameters.Add(new SqlParameter("@userid", SqlDbType.Int) { Value = userId });
+
+                // OUTPUT params
+                var outRows = new SqlParameter("@RowsAffected", SqlDbType.Int)
+                {
+                    Direction = ParameterDirection.Output
+                };
+                cmd.Parameters.Add(outRows);
+
+                var outMsg = new SqlParameter("@Message", SqlDbType.NVarChar, 250)
+                {
+                    Direction = ParameterDirection.Output
+                };
+                cmd.Parameters.Add(outMsg);
+
+                await conn.OpenAsync();
+                // ExecuteNonQuery still valid; output params will be populated afterward
+                await cmd.ExecuteNonQueryAsync();
+
+                var rowsAffected = (outRows.Value == DBNull.Value) ? 0 : (int)outRows.Value;
+                var message = outMsg.Value == DBNull.Value ? null : outMsg.Value.ToString();
+
+                if (rowsAffected > 0)
+                {
+                    return Ok(new { message = message ?? "Student approved successfully.", rowsAffected });
+                }
+                else
+                {
+                    // Not found / already approved
+                    return NotFound(new { message = message ?? "Student not found or already approved.", rowsAffected });
+                }
+            }
+            catch (SqlException ex) when (ex.Number == 2627 || ex.Number == 2601)
+            {
+                return Conflict(new { message = "Duplicate detected by database index.", error = ex.Message });
+            }
+            catch (SqlException ex)
+            {
+                return StatusCode(500, new { message = $"SQL error {ex.Number}: {ex.Message}" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Unexpected error", error = ex.Message });
+            }
+        }
 
 
 
