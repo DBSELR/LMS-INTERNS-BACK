@@ -55,6 +55,20 @@ namespace LMS.Controllers
             return Ok(list);
         }
 
+        [HttpGet("collegewisestudents/{instructorId}")]
+        public async Task<ActionResult<IEnumerable<object>>> Getcollegewisestudents(int instructorId)
+        {
+            var list = new List<object>();
+            using var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+            using var cmd = new SqlCommand("sp_Student_GetCollegewiseStudents", conn) { CommandType = CommandType.StoredProcedure };
+            cmd.Parameters.AddWithValue("@InstructorId", instructorId);
+            await conn.OpenAsync();
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+                list.Add(ReadRow(reader));
+            return Ok(list);
+        }
+
         [HttpGet("studentcount")]
         public async Task<IActionResult> studentcount()
         {
