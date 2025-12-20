@@ -345,7 +345,7 @@ namespace LMS.Controllers
                 cmd.Parameters.AddWithValue("@ClassName", request.GetProperty("className").GetString());
                 cmd.Parameters.AddWithValue("@InstructorId", request.GetProperty("instructorId").GetInt32());
                 cmd.Parameters.AddWithValue("@ExaminationID", request.GetProperty("examinationID").GetInt32());
-                cmd.Parameters.AddWithValue("@Semester", request.GetProperty("semester").GetInt32());
+             //   cmd.Parameters.AddWithValue("@Semester", request.GetProperty("semester").GetInt32());
                 cmd.Parameters.AddWithValue("@BatchName", request.GetProperty("batchName").GetString());
                 cmd.Parameters.AddWithValue("@LiveDate", date.Date);
                 cmd.Parameters.AddWithValue("@StartTime", fullStart);
