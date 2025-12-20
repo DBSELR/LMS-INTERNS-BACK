@@ -257,6 +257,9 @@ builder.Services.AddScoped<IFeeService, FeeService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddTransient<SqlScriptExecutor>();
 
+builder.Services.AddScoped<UserPaymentService>();
+
+
 builder.Services.AddHttpClient();
 
 

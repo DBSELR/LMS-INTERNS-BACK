@@ -35,11 +35,15 @@ namespace LMS.Controllers
 
             try
             {
+                // Generate a unique merchantOrderId
+                var merchantOrderId = "DBS_" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
                 var result = await _phonePeService.InitiatePaymentAsync(
                     dto.Username,
                     dto.Amount,
                     dto.MobileNumber,  // ✅ mobile
-                    dto.Name           // ✅ full name
+                    dto.Name,          // ✅ full name
+                    merchantOrderId    // ✅ pass merchantOrderId
                 );
 
                 return Ok(new
@@ -141,6 +145,96 @@ namespace LMS.Controllers
                 _logger.LogError(ex, "Error recovering all PhonePe missing transactions.");
                 return StatusCode(500, new { error = ex.Message });
             }
+        }
+
+
+        [HttpPost("phonepe/initiate-multi")]
+        [AllowAnonymous]
+        public async Task<IActionResult> InitiatePhonePeMulti(
+     [FromBody] InitiateMultiPaymentDto dto,
+     [FromServices] UserPaymentService userPaymentService)
+        {
+            if (dto == null || dto.Payments == null || dto.Payments.Count == 0)
+                return BadRequest("No payment items provided.");
+
+            // 1️⃣ Calculate total
+            var totalAmount = dto.Payments.Sum(x => x.Amount);
+            if (totalAmount <= 0)
+                return BadRequest("Total amount must be greater than zero.");
+
+            // 2️⃣ Generate MerchantOrderId ONCE
+            var merchantOrderId = "DBS_" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+            // 3️⃣ INSERT UserPayments FIRST (CRITICAL)
+            await userPaymentService.InsertUserPaymentsAsync(
+                dto.Payments,
+                merchantOrderId
+            );
+
+            // 4️⃣ Call PhonePe (this inserts PaymentTransactions)
+            var phonePeResult = await _phonePeService.InitiatePaymentAsync(
+                dto.Username,
+                totalAmount,
+                dto.MobileNo,
+                dto.Name,
+                merchantOrderId // pass SAME ID
+            );
+
+            // 5️⃣ Redirect
+            return Ok(new
+            {
+                redirectUrl = phonePeResult.RedirectUrl,
+                merchantOrderId = merchantOrderId
+            });
+        }
+
+        [HttpPost("initiate-multi-payment")]
+        [AllowAnonymous]
+        public async Task<IActionResult> InitiateMultiPayment(
+            [FromBody] InitiateMultiPaymentDto request,
+            [FromServices] UserPaymentService userPaymentService)
+        {
+            if (request == null || request.Payments == null || request.Payments.Count == 0)
+                return BadRequest("No payment items provided.");
+
+            var totalAmount = request.Payments.Sum(x => x.Amount);
+            if (totalAmount <= 0)
+                return BadRequest("Total amount must be greater than zero.");
+
+            var merchantOrderId = "DBS_" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+            // ensure DB insertion succeeds before calling PhonePe
+            int inserted = 0;
+            try
+            {
+                inserted = await userPaymentService.InsertUserPaymentsAsync(request.Payments, merchantOrderId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to insert UserPayments for {Order}", merchantOrderId);
+                return StatusCode(500, new { error = "Failed to save payment breakup. Try again." });
+            }
+
+            if (inserted == 0)
+            {
+                _logger.LogWarning("No UserPayments rows were inserted for {Order}", merchantOrderId);
+                return StatusCode(500, new { error = "No payment rows inserted." });
+            }
+
+            var phonePeResult = await _phonePeService.InitiatePaymentAsync(
+                request.Username,
+                totalAmount,
+                request.MobileNo,
+                request.Name,
+                merchantOrderId
+            );
+
+            return Ok(new
+            {
+                redirectUrl = phonePeResult.RedirectUrl,
+                merchantOrderId = merchantOrderId,
+                insertedRows = inserted
+            });
         }
     }
 }
