@@ -92,6 +92,8 @@ namespace LMS.DTOs
         public string Remarks { get; set; }
         public int ftid { get; set; }
         public string course { get; set; }
+        public string sname { get; set; }
+        public string mobile { get; set; }
     }
 
     

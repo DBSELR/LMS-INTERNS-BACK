@@ -128,7 +128,9 @@ public class FeeController : ControllerBase
                 Hid = reader.IsDBNull(5) ? 0 : reader.GetInt32(5), 
                 FeeHead = reader.IsDBNull(6) ? "" : reader.GetString(6),
                 Paid = reader.IsDBNull(7) ? 0 : reader.GetDecimal(7),
-                Remarks = reader.IsDBNull(8) ? "" : reader.GetString(8)
+                Remarks = reader.IsDBNull(8) ? "" : reader.GetString(8),
+                sname = reader.IsDBNull(9) ? "" : reader.GetString(9),
+                mobile = reader.IsDBNull(10) ? "" : reader.GetString(10)
             });
         }
 
