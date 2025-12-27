@@ -55,7 +55,11 @@ public class FeeController : ControllerBase
                 AmountPaid = reader.GetDecimal(3),
                 TransactionId = reader.GetString(4), 
                 PaymentDate = reader.IsDBNull(5) ? null : reader.GetDateTime(5),
-                FeeHead = reader.GetString(6)
+                FeeHead = reader.GetString(6),
+                sname = reader.GetString(7),
+                mobile = reader.GetString(8),
+                course = reader.GetString(9),
+                Batch = reader.GetString(10)
             });
         }
 
