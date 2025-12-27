@@ -50,17 +50,12 @@ public class FeeController : ControllerBase
             result.Add(new FeeSummaryDto
             {
                 FeeId = reader.GetInt32(0),
-               
-                StudentIdd = reader.GetString(1),
-                AmountDue = reader.GetDecimal(2),
+                StudentId = reader.GetInt32(1),
+                Hid = reader.GetInt32(2),
                 AmountPaid = reader.GetDecimal(3),
-                PaymentMethod = reader.GetString(4),
-                TransactionId = reader.GetString(5), 
-                PaymentDate = reader.IsDBNull(6) ? null : reader.GetDateTime(6),
-                 Installment = reader.GetInt32(7),
-                Hid = reader.GetInt32(8),
-                ftid = reader.GetInt32(9),
-                FeeHead = reader.GetString(10)
+                TransactionId = reader.GetString(4), 
+                PaymentDate = reader.IsDBNull(5) ? null : reader.GetDateTime(5),
+                FeeHead = reader.GetString(6)
             });
         }
 
