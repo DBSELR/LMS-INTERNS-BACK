@@ -94,6 +94,8 @@ namespace LMS.DTOs
         public string course { get; set; }
         public string sname { get; set; }
         public string mobile { get; set; }
+        public string colname { get; set; }
+        public string colmobile { get; set; }
     }
 
     

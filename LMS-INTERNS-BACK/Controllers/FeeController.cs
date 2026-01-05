@@ -821,7 +821,9 @@ public class FeeController : ControllerBase
                 Paid = reader.IsDBNull(8) ? 0 : reader.GetDecimal(8),
                 Remarks = reader.IsDBNull(9) ? "" : reader.GetString(9),
                 ftid = reader.IsDBNull(10) ? 0 : reader.GetInt32(10),
-                course = reader.IsDBNull(11) ? "" : reader.GetString(11)
+                course = reader.IsDBNull(11) ? "" : reader.GetString(11),
+                colname = reader.IsDBNull(12) ? "" : reader.GetString(12),
+                colmobile = reader.IsDBNull(13) ? "" : reader.GetString(13)
             });
         }
 
