@@ -19,6 +19,18 @@ namespace LMS.Controllers
             _configuration = configuration;
         }
 
+        private Dictionary<string, object> ReadRow(SqlDataReader reader)
+        {
+            var row = new Dictionary<string, object>();
+            for (int i = 0; i < reader.FieldCount; i++)
+            {
+                var name = reader.GetName(i);
+                var camel = char.ToLowerInvariant(name[0]) + name.Substring(1);
+                row[camel] = reader.IsDBNull(i) ? null : reader.GetValue(i);
+            }
+            return row;
+        }
+
         //[HttpGet("dashboard")]
         //public async Task<IActionResult> GetDashboardSummary()
         //{
@@ -106,6 +118,7 @@ namespace LMS.Controllers
         }
 
         // Models/DashboardSummary.cs
+        // Models/DashboardSummary.cs
         public class DashboardSummary
         {
             public int Students { get; set; }
@@ -125,7 +138,13 @@ namespace LMS.Controllers
             public decimal liveClassAttendancePercentPerBatch { get; set; }
             public decimal ObjectiveExamAttendancePercentPerBatch { get; set; }
             public decimal SubjectiveExamAttendancePercentPerBatch { get; set; }
+
+           
+            public decimal TotalFeeAmount { get; set; }
+            public decimal TotalPaidAmount { get; set; }
+            public decimal TotalDueAmount { get; set; }
         }
+
         [HttpGet("dashboard")]
         public async Task<IActionResult> GetDashboardSummary()
         {
@@ -184,21 +203,23 @@ namespace LMS.Controllers
                                 pending = Convert.ToInt32(reader["ToBeApprovedStudentsCount"])
                             };
 
-                            summary.ContentReadPercentPerBatch = reader["ContentReadPercentPerBatch"] == DBNull.Value
-                                ? 0m
-                                : Convert.ToDecimal(reader["ContentReadPercentPerBatch"]);
+                            summary.ContentReadPercentPerBatch = reader["ContentReadPercentPerBatch"] != DBNull.Value
+                                ? Convert.ToDecimal(reader["ContentReadPercentPerBatch"])
+                                : 0m;
+                            summary.liveClassAttendancePercentPerBatch = reader["LiveClassAttendancePercentPerBatch"] != DBNull.Value
+                                ? Convert.ToDecimal(reader["LiveClassAttendancePercentPerBatch"])
+                                : 0m;
+                            summary.ObjectiveExamAttendancePercentPerBatch = reader["ObjectiveExamAttendancePercentPerBatch"] != DBNull.Value
+                                ? Convert.ToDecimal(reader["ObjectiveExamAttendancePercentPerBatch"])
+                                : 0m;
+                            summary.SubjectiveExamAttendancePercentPerBatch = reader["SubjectiveExamAttendancePercentPerBatch"] != DBNull.Value
+                                ? Convert.ToDecimal(reader["SubjectiveExamAttendancePercentPerBatch"])
+                                : 0m;
 
-                            summary.liveClassAttendancePercentPerBatch = reader["LiveClassAttendancePercentPerBatch"] == DBNull.Value
-                                ? 0m
-                                : Convert.ToDecimal(reader["LiveClassAttendancePercentPerBatch"]);
-
-                            summary.ObjectiveExamAttendancePercentPerBatch = reader["ObjectiveExamAttendancePercentPerBatch"] == DBNull.Value
-                                ? 0m
-                                : Convert.ToDecimal(reader["ObjectiveExamAttendancePercentPerBatch"]);
-
-                            summary.SubjectiveExamAttendancePercentPerBatch = reader["SubjectiveExamAttendancePercentPerBatch"] == DBNull.Value
-                                ? 0m
-                                : Convert.ToDecimal(reader["SubjectiveExamAttendancePercentPerBatch"]);
+                         
+                            summary.TotalFeeAmount = reader["TotalFeeAmount"] != DBNull.Value ? Convert.ToDecimal(reader["TotalFeeAmount"]) : 0m;
+                            summary.TotalPaidAmount = reader["TotalPaidAmount"] != DBNull.Value ? Convert.ToDecimal(reader["TotalPaidAmount"]) : 0m;
+                            summary.TotalDueAmount = reader["TotalDueAmount"] != DBNull.Value ? Convert.ToDecimal(reader["TotalDueAmount"]) : 0m;
                         }
                     }
                 }
@@ -258,6 +279,22 @@ namespace LMS.Controllers
                     details = ex.Message
                 });
             }
+        }
+
+        [HttpGet("GetFeesummary")]
+        public async Task<IActionResult> GetFeesummary()
+        {
+            var result = new List<object>();
+            using var conn = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+            using var cmd = new SqlCommand("sp_GetFeesummary", conn)
+            { CommandType = CommandType.StoredProcedure };
+            //cmd.Parameters.AddWithValue("@InstructorId", InstructorId);
+            await conn.OpenAsync();
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+                result.Add(ReadRow(reader));
+
+            return Ok(result);
         }
 
 

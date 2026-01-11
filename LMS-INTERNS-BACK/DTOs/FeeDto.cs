@@ -81,6 +81,8 @@ namespace LMS.DTOs
         public decimal Fee { get; set; }
         public decimal Paid { get; set; }
         public decimal Due { get; set; }
+
+        public decimal ExcessPaid { get; set; }
         public string PaymentMethod { get; set; }
         public string TransactionId { get; set; }
 

@@ -182,6 +182,7 @@ public class FeeController : ControllerBase
                 Fee = reader.GetDecimal(0),
                 Paid = reader.GetDecimal(1),
                 Due = reader.GetDecimal(2),
+                ExcessPaid = reader.GetDecimal(3),
                 //DueDate = reader.GetDateTime(10),
                 //PaymentDate = reader.IsDBNull(11) ? null : reader.GetDateTime(11)
             });
