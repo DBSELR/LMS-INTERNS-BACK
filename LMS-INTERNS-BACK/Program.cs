@@ -92,10 +92,6 @@
 
 //app.Run();
 
-
-
-
-
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.EntityFrameworkCore;
@@ -286,7 +282,14 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "https://uginterns.dbasesolutions.in", "https://www.uginterns.dbasesolutions.in", "https://interns.dbasesolutions.in", "https://www.interns.dbasesolutions.in", "https://mercury-uat.phonepe.com")
+        policy.WithOrigins("http://localhost:3000", "http://localhost:3001", 
+            "https://uginterns.dbasesolutions.in", 
+            "https://www.uginterns.dbasesolutions.in", 
+            "https://interns.dbasesolutions.in", 
+            "https://www.interns.dbasesolutions.in",
+            "https://mercury-uat.phonepe.com",
+            "https://marksentry.dbasesolutions.in",
+            "https://www.marksentry.dbasesolutions.in")
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials(); //  CRITICAL for cookie/session use
